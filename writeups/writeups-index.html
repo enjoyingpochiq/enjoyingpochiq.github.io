@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Writeups | 0xShadow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810; --surface: #0e0e1a; --surface2: #13131f;
+    --border: rgba(255,255,255,0.06); --accent: #c8f;
+    --accent2: #7df; --accent-glow: rgba(204,136,255,0.15);
+    --text: #e8e8f0; --muted: #6b6b80;
+    --red: #ff4d6d; --green: #3ddc84; --yellow: #ffaa00;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: .5;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.5rem 4rem;
+    background: rgba(8,8,16,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: 'JetBrains Mono', monospace; font-size: .9rem; color: var(--accent); text-decoration: none; }
+  .nav-logo span { color: var(--muted); }
+  nav ul { list-style: none; display: flex; gap: 2rem; }
+  nav ul a { text-decoration: none; color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; transition: color .2s; }
+  nav ul a:hover, nav ul a.active { color: var(--text); }
+
+  .wrapper { max-width: 1000px; margin: 0 auto; padding: 9rem 2rem 5rem; }
+
+  /* HEADER */
+  .page-header { margin-bottom: 3.5rem; }
+  .page-label { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--accent); letter-spacing: .25em; text-transform: uppercase; margin-bottom: .8rem; }
+  .page-label::before { content: '// '; color: var(--muted); }
+  h1 { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; letter-spacing: -.02em; line-height: 1; margin-bottom: 1rem; }
+  .page-sub { color: var(--muted); font-size: .95rem; max-width: 500px; line-height: 1.7; }
+
+  /* FILTERS */
+  .filters {
+    display: flex; flex-wrap: wrap; gap: .6rem;
+    margin-bottom: 2.5rem;
+  }
+  .filter-btn {
+    padding: .4rem 1rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem; color: var(--muted); cursor: pointer;
+    letter-spacing: .1em; text-transform: uppercase; transition: all .2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--accent-glow); border-color: rgba(204,136,255,0.3); color: var(--accent);
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex; gap: 2.5rem;
+    padding: 1.5rem 2rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 2.5rem;
+  }
+  .sbar-item { display: flex; flex-direction: column; gap: .2rem; }
+  .sbar-num { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .sbar-label { font-family: 'JetBrains Mono', monospace; font-size: .6rem; color: var(--muted); letter-spacing: .15em; text-transform: uppercase; }
+
+  /* GRID */
+  .writeups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
+
+  .writeup-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.6rem;
+    text-decoration: none; color: var(--text);
+    display: flex; flex-direction: column; gap: .8rem;
+    transition: all .3s; position: relative; overflow: hidden;
+    opacity: 0; transform: translateY(20px);
+    animation: fadeUp .5s forwards;
+  }
+  .writeup-card:nth-child(1) { animation-delay: .05s }
+  .writeup-card:nth-child(2) { animation-delay: .1s }
+  .writeup-card:nth-child(3) { animation-delay: .15s }
+  .writeup-card:nth-child(4) { animation-delay: .2s }
+  .writeup-card:nth-child(5) { animation-delay: .25s }
+  .writeup-card:nth-child(6) { animation-delay: .3s }
+
+  .writeup-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0; transition: opacity .3s;
+  }
+  .writeup-card:hover { border-color: rgba(204,136,255,0.25); transform: translateY(-4px); }
+  .writeup-card:hover::before { opacity: 1; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .card-os { font-size: 1.3rem; }
+
+  .badges { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .badge {
+    padding: .25rem .65rem; border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace; font-size: .6rem;
+    letter-spacing: .1em; text-transform: uppercase;
+  }
+  .badge-easy   { background: rgba(61,220,132,0.1);  color: var(--green);  border: 1px solid rgba(61,220,132,0.2); }
+  .badge-medium { background: rgba(255,170,0,0.1);   color: var(--yellow); border: 1px solid rgba(255,170,0,0.2); }
+  .badge-hard   { background: rgba(255,77,109,0.1);  color: var(--red);    border: 1px solid rgba(255,77,109,0.2); }
+  .badge-htb    { background: rgba(125,223,255,0.1); color: var(--accent2);border: 1px solid rgba(125,223,255,0.2); }
+  .badge-thm    { background: rgba(255,100,80,0.1);  color: #f86;          border: 1px solid rgba(255,100,80,0.2); }
+
+  .card-title { font-size: 1.1rem; font-weight: 700; }
+  .card-desc { font-size: .8rem; color: var(--muted); line-height: 1.6; flex: 1; }
+
+  .card-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .tag {
+    padding: .25rem .65rem;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+    font-size: .62rem; color: var(--muted);
+  }
+
+  .card-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--muted);
+    padding-top: .6rem; border-top: 1px solid var(--border);
+  }
+
+  .card-read { color: var(--accent); font-size: .72rem; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+  footer {
+    margin-top: 5rem; padding: 2rem 4rem;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  footer p { font-family: 'JetBrains Mono', monospace; font-size: .7rem; color: var(--muted); }
+  footer span { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    nav { padding: 1.2rem 1.5rem; }
+    .wrapper { padding: 7rem 1.2rem 4rem; }
+    .stats-bar { gap: 1.5rem; flex-wrap: wrap; }
+    footer { flex-direction: column; gap: .5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="nav-logo">0xShadow<span>.sh</span></a>
+  <ul>
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="index.html" class="active">Writeups</a></li>
+    <li><a href="../index.html#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<div class="wrapper">
+
+  <div class="page-header">
+    <div class="page-label">Writeups & Resoluciones</div>
+    <h1>Máquinas<br>resueltas.</h1>
+    <p class="page-sub">Documentación detallada de máquinas de HackTheBox y TryHackMe. Publicadas únicamente tras la retirada oficial.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="sbar-item">
+      <span class="sbar-num" id="total-count">6</span>
+      <span class="sbar-label">Total writeups</span>
+    </div>
+    <div class="sbar-item">
+      <span class="sbar-num">4</span>
+      <span class="sbar-label">HackTheBox</span>
+    </div>
+    <div class="sbar-item">
+      <span class="sbar-num">2</span>
+      <span class="sbar-label">TryHackMe</span>
+    </div>
+    <div class="sbar-item">
+      <span class="sbar-num">3</span>
+      <span class="sbar-label">Easy</span>
+    </div>
+    <div class="sbar-item">
+      <span class="sbar-num">2</span>
+      <span class="sbar-label">Medium</span>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterCards('all', this)">Todos</button>
+    <button class="filter-btn" onclick="filterCards('htb', this)">HackTheBox</button>
+    <button class="filter-btn" onclick="filterCards('thm', this)">TryHackMe</button>
+    <button class="filter-btn" onclick="filterCards('easy', this)">Easy</button>
+    <button class="filter-btn" onclick="filterCards('medium', this)">Medium</button>
+    <button class="filter-btn" onclick="filterCards('windows', this)">Windows</button>
+    <button class="filter-btn" onclick="filterCards('linux', this)">Linux</button>
+  </div>
+
+  <!-- GRID -->
+  <div class="writeups-grid" id="grid">
+
+    <a href="blue.html" class="writeup-card" data-tags="htb easy windows smb">
+      <div class="card-top">
+        <span class="card-os">🪟</span>
+        <div class="badges">
+          <span class="badge badge-htb">HTB</span>
+          <span class="badge badge-easy">Easy</span>
+        </div>
+      </div>
+      <div class="card-title">Blue</div>
+      <div class="card-desc">EternalBlue / MS17-010. Explotación directa de SMBv1 para obtener acceso como SYSTEM sin credenciales.</div>
+      <div class="card-tags">
+        <span class="tag">SMB</span>
+        <span class="tag">Metasploit</span>
+        <span class="tag">MS17-010</span>
+      </div>
+      <div class="card-meta">
+        <span>Windows 7 SP1</span>
+        <span class="card-read">Leer →</span>
+      </div>
+    </a>
+
+    <a href="lame.html" class="writeup-card" data-tags="htb easy linux smb">
+      <div class="card-top">
+        <span class="card-os">🐧</span>
+        <div class="badges">
+          <span class="badge badge-htb">HTB</span>
+          <span class="badge badge-easy">Easy</span>
+        </div>
+      </div>
+      <div class="card-title">Lame</div>
+      <div class="card-desc">Samba 3.0.20 vulnerable a ejecución de código remoto. Primera máquina recomendada para principiantes.</div>
+      <div class="card-tags">
+        <span class="tag">Samba</span>
+        <span class="tag">CVE-2007-2447</span>
+        <span class="tag">RCE</span>
+      </div>
+      <div class="card-meta">
+        <span>Debian Linux</span>
+        <span class="card-read">Leer →</span>
+      </div>
+    </a>
+
+    <a href="jerry.html" class="writeup-card" data-tags="htb easy windows web">
+      <div class="card-top">
+        <span class="card-os">🪟</span>
+        <div class="badges">
+          <span class="badge badge-htb">HTB</span>
+          <span class="badge badge-easy">Easy</span>
+        </div>
+      </div>
+      <div class="card-title">Jerry</div>
+      <div class="card-desc">Apache Tomcat con credenciales por defecto. Upload de WAR malicioso para obtener shell como SYSTEM.</div>
+      <div class="card-tags">
+        <span class="tag">Tomcat</span>
+        <span class="tag">WAR upload</span>
+        <span class="tag">Web</span>
+      </div>
+      <div class="card-meta">
+        <span>Windows Server 2012</span>
+        <span class="card-read">Leer →</span>
+      </div>
+    </a>
+
+    <a href="nibbles.html" class="writeup-card" data-tags="htb easy linux web">
+      <div class="card-top">
+        <span class="card-os">🐧</span>
+        <div class="badges">
+          <span class="badge badge-htb">HTB</span>
+          <span class="badge badge-easy">Easy</span>
+        </div>
+      </div>
+      <div class="card-title">Nibbles</div>
+      <div class="card-desc">CMS Nibbleblog vulnerable. Enumeración de directorios, upload bypass y privesc con sudo misconfiguration.</div>
+      <div class="card-tags">
+        <span class="tag">Web</span>
+        <span class="tag">File upload</span>
+        <span class="tag">Sudo</span>
+      </div>
+      <div class="card-meta">
+        <span>Ubuntu Linux</span>
+        <span class="card-read">Leer →</span>
+      </div>
+    </a>
+
+    <a href="cronos.html" class="writeup-card" data-tags="htb medium linux web">
+      <div class="card-top">
+        <span class="card-os">🐧</span>
+        <div class="badges">
+          <span class="badge badge-htb">HTB</span>
+          <span class="badge badge-medium">Medium</span>
+        </div>
+      </div>
+      <div class="card-title">Cronos</div>
+      <div class="card-desc">DNS zone transfer revela subdominio admin. SQL injection en login, command injection y privesc via cron job.</div>
+      <div class="card-tags">
+        <span class="tag">DNS</span>
+        <span class="tag">SQLi</span>
+        <span class="tag">Cron</span>
+      </div>
+      <div class="card-meta">
+        <span>Ubuntu Linux</span>
+        <span class="card-read">Leer →</span>
+      </div>
+    </a>
+
+    <a href="thm-basic-pentesting.html" class="writeup-card" data-tags="thm easy linux smb">
+      <div class="card-top">
+        <span class="card-os">🐧</span>
+        <div class="badges">
+          <span class="badge badge-thm">THM</span>
+          <span class="badge badge-easy">Easy</span>
+        </div>
+      </div>
+      <div class="card-title">Basic Pentesting</div>
+      <div class="card-desc">Room introductoria. SMB enum, brute force de SSH, weak credentials y escalada con contraseña en archivo oculto.</div>
+      <div class="card-tags">
+        <span class="tag">SMB enum</span>
+        <span class="tag">Brute force</span>
+        <span class="tag">Privesc</span>
+      </div>
+      <div class="card-meta">
+        <span>Ubuntu Linux</span>
+        <span class="card-read">Leer →</span>
+      </div>
+    </a>
+
+  </div><!-- /grid -->
+</div>
+
+<footer>
+  <p>© 2025 <span>0xShadow</span></p>
+  <p>Writeups publicados tras retirada — <span>HTB ToS compliant</span></p>
+</footer>
+
+<script>
+function filterCards(tag, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const cards = document.querySelectorAll('.writeup-card');
+  cards.forEach(card => {
+    const tags = card.dataset.tags || '';
+    card.style.display = (tag === 'all' || tags.includes(tag)) ? 'flex' : 'none';
+  });
+}
+</script>
+</body>
+</html>
