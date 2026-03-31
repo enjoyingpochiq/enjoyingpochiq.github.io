@@ -1,0 +1,84 @@
+---
+// src/components/Videos.astro
+
+const videos = [
+    {
+        title: "HackTheBox Forest - AS-REP Roasting & DCSync",
+        machine: "Forest",
+        duration: "24:15",
+        views: "1.2K",
+        link: "#" // Pon aquí tu link a YouTube
+    },
+    {
+        title: "Resolución Devzat (TryHackMe) - Command Injection",
+        machine: "Devzat",
+        duration: "18:40",
+        views: "850",
+        link: "#"
+    }
+];
+---
+
+<section class="flex flex-col gap-12 pt-24">
+    
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6" data-aos="fade-right">
+        <div class="flex flex-col gap-3">
+            <h3 class="text-3xl font-mono text-red-accent uppercase tracking-widest">06. Video Writeups</h3>
+            <p class="text-4xl md:text-5xl font-extrabold text-white tracking-tighter leading-tight">
+                Explotación paso a <br/>
+                <span class="text-zinc-500">paso en vídeo.</span>
+            </p>
+        </div>
+        
+        <a href="https://www.youtube.com/@litelboy_7647" target="_blank" class="group flex items-center gap-2 text-sm font-medium text-white hover:text-red-accent transition-colors pb-2">
+            Ir a YouTube
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {videos.map((video, index) => (
+            <a href={video.link} class="group relative flex flex-col gap-4 p-4 rounded-3xl bg-bg-card border border-border-subtle overflow-hidden transition-all duration-300 hover:border-red-accent/40 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(225,29,72,0.15)]"
+               data-aos="fade-up" data-aos-delay={index * 100}>
+                
+                <div class="relative w-full aspect-video bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-800 flex items-center justify-center">
+                    <div class="absolute inset-0 p-4 font-mono text-[8px] md:text-[10px] text-zinc-800 leading-tight opacity-50 select-none overflow-hidden">
+                        root@kali:~# nmap -p- -sS -min-rate 5000 10.10.10.x<br/>
+                        Starting Nmap 7.93 ( https://nmap.org )<br/>
+                        Nmap scan report for target<br/>
+                        Host is up (0.041s latency).<br/>
+                        PORT STATE SERVICE<br/>
+                        22/tcp open ssh<br/>
+                        80/tcp open http<br/>
+                        root@kali:~# python3 exploit.py -u http://target<br/>
+                        [*] Injecting payload...<br/>
+                        [+] Reverse shell caught!
+                    </div>
+                    
+                    <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors"></div>
+                    
+                    <div class="relative z-10 w-16 h-16 rounded-full bg-red-accent/90 flex items-center justify-center text-white shadow-[0_0_30px_rgba(225,29,72,0.5)] group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="ml-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </div>
+
+                    <span class="absolute bottom-3 right-3 px-2 py-1 bg-black/80 text-white text-xs font-mono rounded backdrop-blur-sm">
+                        {video.duration}
+                    </span>
+                </div>
+
+                <div class="px-2 pb-2">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-0.5 text-[10px] font-mono uppercase text-zinc-400 bg-zinc-900 border border-zinc-800 rounded">
+                            {video.machine}
+                        </span>
+                        <span class="text-xs text-zinc-500 font-mono">• {video.views} vistas</span>
+                    </div>
+                    <h4 class="text-xl font-bold text-white tracking-tight group-hover:text-red-accent transition-colors line-clamp-2">
+                        {video.title}
+                    </h4>
+                </div>
+            </a>
+        ))}
+    </div>
+
+</section>

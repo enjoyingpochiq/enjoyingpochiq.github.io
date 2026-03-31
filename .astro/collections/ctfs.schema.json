@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "machine": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "string"
+    },
+    "os": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string"
+    },
+    "diffColor": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "$schema": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "machine",
+    "platform",
+    "os",
+    "difficulty",
+    "diffColor",
+    "date",
+    "tags"
+  ]
+}

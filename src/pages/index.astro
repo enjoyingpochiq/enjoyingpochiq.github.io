@@ -1,0 +1,27 @@
+---
+// src/pages/index.astro
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import About from '../components/About.astro';
+import Projects from '../components/Projects.astro';
+import Writeups from '../components/Writeups.astro';
+import CTFWriteups from '../components/CTFWriteups.astro';
+import Roadmap from '../components/Roadmap.astro'; // <-- Importas el Roadmap
+import Videos from '../components/Videos.astro'; // <-- Importar
+import HallOfFame from '../components/HallOfFame.astro'; // <-- Importar
+import Footer from '../components/Footer.astro'; // <-- 1. Importamos el Footer
+---
+
+<Layout title="Alejandro Juan Hervás Vogt | Junior Pentester & Red Teamer">
+	<div class="flex flex-col"></div>
+		<Hero />
+		<About />
+		<Roadmap />
+		<Projects />
+		<Writeups />
+		<CTFWriteups />
+		<Videos />
+		<HallOfFame />
+		<Footer />
+	</div>
+</Layout>

@@ -1,0 +1,57 @@
+---
+// src/pages/blog/[slug].astro
+// 1. Importamos también 'render' desde astro:content
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('microblog');
+  return posts.map(entry => ({
+    // 2. Aquí cambiamos entry.slug por entry.id
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+// 3. Y aquí usamos la nueva forma de renderizar en Astro v6
+const { Content } = await render(entry);
+---
+
+<Layout title={`${entry.data.title} | Micro-blog`}>
+    <article class="max-w-3xl mx-auto pt-24 pb-20 animate-fade-in">
+        
+        <a href="/" class="inline-flex items-center gap-2 text-xl font-mono text-zinc-500 hover:text-red-accent transition-colors mb-12">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Volver al inicio
+        </a>
+
+        <header class="flex flex-col gap-6 mb-16 relative">
+            <div class="absolute -top-10 -left-10 w-40 h-40 bg-red-accent/10 blur-[60px] rounded-full pointer-events-none -z-10"></div>
+            
+            <div class="flex items-center gap-3">
+                <span class="px-3 py-1 text-xs font-mono uppercase tracking-wider text-red-accent bg-red-accent/10 rounded border border-red-accent/20">
+                    {entry.data.category}
+                </span>
+                <span class="text-sm font-mono text-zinc-500">{entry.data.date} • {entry.data.readTime}</span>
+            </div>
+            
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                {entry.data.title}
+            </h1>
+        </header>
+
+        <div class="prose prose-invert prose-zinc max-w-none 
+                    prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white
+                    prose-h3:text-2xl prose-h3:mt-10 prose-h3:mb-4
+                    prose-p:text-zinc-400 prose-p:leading-relaxed prose-p:mb-6
+                    prose-a:text-red-accent prose-a:no-underline hover:prose-a:underline
+                    prose-strong:text-zinc-200 prose-strong:font-semibold
+                    prose-code:text-red-400 prose-code:bg-red-400/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                    prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800 prose-pre:rounded-xl prose-pre:p-5 prose-pre:shadow-2xl
+                    prose-ul:list-disc prose-ul:text-zinc-400 prose-li:mb-2">
+            <Content />
+        </div>
+
+    </article>
+</Layout>

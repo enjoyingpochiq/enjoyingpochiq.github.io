@@ -1,0 +1,99 @@
+---
+// src/components/CTFWriteups.astro
+
+const writeups = [
+    {
+        machine: "Forest",
+        platform: "HackTheBox",
+        os: "Windows",
+        difficulty: "Fácil",
+        diffColor: "text-green-400 bg-green-400/10 border-green-400/20", // Color dinámico
+        description: "Explotación de AS-REP Roasting y abuso de privilegios de cuenta (GenericAll) para comprometer el dominio usando BloodHound.",
+        tags: ["Active Directory", "BloodHound", "DCSync"],
+        link: "/writeups/forest"
+    },
+    {
+        machine: "Devzat",
+        platform: "HackTheBox",
+        os: "Linux",
+        difficulty: "Media",
+        diffColor: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+        description: "Bypass de validación en aplicación Go (Command Injection) y pivoteo interno mediante Port Forwarding para escalar a root.",
+        tags: ["Go", "Command Injection", "Pivoting"],
+        link: "#"
+    },
+    {
+        machine: "Mantis",
+        platform: "HackTheBox",
+        os: "Windows",
+        difficulty: "Difícil",
+        diffColor: "text-red-500 bg-red-500/10 border-red-500/20",
+        description: "Enumeración profunda de bases de datos SQL Server, extracción de credenciales ocultas y forjado de un Golden Ticket.",
+        tags: ["SQL Server", "Golden Ticket", "Recon"],
+        link: "#"
+    }
+];
+---
+
+<section class="flex flex-col gap-12 pt-24">
+    
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6" data-aos="fade-right">
+        <div class="flex flex-col gap-3">
+            <h3 class="text-3xl font-mono text-red-accent uppercase tracking-widest">05. CTFs & Máquinas</h3>
+            <p class="text-4xl md:text-5xl font-extrabold text-white tracking-tighter leading-tight">
+                De 0 a <span class="text-zinc-500">Root / SYSTEM.</span>
+            </p>
+        </div>
+        
+        <a href="/writeups" class="group flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-accent transition-colors pb-2">
+            Ver todas las máquinas
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {writeups.map((writeup, index) => (
+            <a href={writeup.link} 
+               class="group relative flex flex-col gap-5 p-8 rounded-3xl bg-bg-card border border-border-subtle overflow-hidden transition-all duration-300 hover:border-red-accent/40 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(225,29,72,0.15)]"
+               data-aos="fade-up" data-aos-delay={index * 100}>
+               
+                <div class="absolute -top-16 -right-16 w-48 h-48 bg-red-accent/10 blur-[60px] rounded-full group-hover:bg-red-accent/20 transition-all pointer-events-none z-0"></div>
+
+                <div class="relative z-10 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white transition-colors">
+                            {writeup.os === "Windows" ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 0-2 2c0 1.1-.9 2-2 2-.88 0-1.59.39-2.03 1A4 4 0 0 0 4 10c0 2.2 1.8 4 4 4h.5c.3 0 .5.2.5.5v.5a2 2 0 0 1-2 2H6M20 10c0-2.2-1.8-4-4-4a2 2 0 0 0-2-2c0-1.1-.9-2-2-2M15.5 14h.5c2.2 0 4-1.8 4-4M10.5 16.5v.5a2 2 0 0 0 2 2h3"/></svg>
+                            )}
+                        </div>
+                        <span class="text-xs font-mono text-zinc-500">{writeup.platform}</span>
+                    </div>
+                    
+                    <span class={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded border ${writeup.diffColor}`}>
+                        {writeup.difficulty}
+                    </span>
+                </div>
+
+                <div class="relative z-10 flex flex-col gap-3 flex-grow">
+                    <h4 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                        {writeup.machine}
+                    </h4>
+                    <p class="text-zinc-400 leading-relaxed text-sm flex-grow">
+                        {writeup.description}
+                    </p>
+                </div>
+
+                <div class="relative z-10 flex flex-wrap gap-2 mt-2 pt-4 border-t border-border-subtle">
+                    {writeup.tags.map((tag) => (
+                        <span class="text-xs font-mono text-zinc-500">
+                            #{tag.toLowerCase().replace(" ", "")}
+                        </span>
+                    ))}
+                </div>
+            </a>
+        ))}
+    </div>
+
+</section>

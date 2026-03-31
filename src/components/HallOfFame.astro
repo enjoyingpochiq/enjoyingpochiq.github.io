@@ -1,0 +1,54 @@
+---
+// src/components/HallOfFame.astro
+
+// El día que tengas CVEs o Bounties, simplemente añádelos a esta lista.
+const achievements: any[] = []; 
+---
+
+<section class="flex flex-col gap-12 pt-12">
+    
+    <div class="flex flex-col gap-3" data-aos="fade-right">
+        <h3 class="text-3xl font-mono text-red-accent uppercase tracking-widest">07. Hall of Fame</h3>
+        <p class="text-4xl md:text-5xl font-extrabold text-white tracking-tighter leading-tight">
+            CVEs & <br/>
+            <span class="text-zinc-500">Bug Bounty.</span>
+        </p>
+    </div>
+
+    {achievements.length === 0 ? (
+        <div class="group relative p-12 rounded-3xl bg-bg-card/30 border-2 border-dashed border-zinc-800 flex flex-col items-center justify-center text-center overflow-hidden" data-aos="fade-up">
+            
+            <div class="absolute inset-0 opacity-20 pointer-events-none z-0">
+                
+                <div class="w-[400px] h-[400px] border border-red-accent/30 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                <div class="w-[300px] h-[300px] border border-red-accent/40 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                <div class="w-[200px] h-[200px] border border-red-accent/50 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                
+                <div class="w-[200px] h-[2px] bg-gradient-to-r from-transparent to-red-accent absolute top-1/2 left-1/2 -translate-y-1/2 origin-left animate-spin" 
+                     style="animation-duration: 3s; animation-timing-function: linear;">
+                </div>
+            </div>
+
+            <div class="relative z-10 flex flex-col items-center gap-4 max-w-lg">
+                <div class="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-red-accent mb-2 group-hover:scale-110 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <h4 class="text-2xl font-bold text-white tracking-tight">La caza está abierta</h4>
+                <p class="text-zinc-500 text-sm leading-relaxed">
+                    Actualmente auditando infraestructuras corporativas y participando en programas de Bug Bounty. Los CVEs y hallazgos públicos se publicarán aquí tras completar el proceso de divulgación responsable (Responsible Disclosure).
+                </p>
+                <div class="mt-4 px-4 py-2 rounded-full bg-red-accent/10 border border-red-accent/20 text-red-accent text-xs font-mono flex items-center gap-2 relative">
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    Hunting Zero-Days
+                </div>
+            </div>
+        </div>
+    ) : (
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        </div>
+    )}
+
+</section>

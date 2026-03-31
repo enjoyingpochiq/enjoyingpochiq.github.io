@@ -1,0 +1,76 @@
+---
+// src/components/Writeups.astro
+
+const posts = [
+    {
+        title: "Bypass de filtros SSRF usando redirecciones DNS personalizadas",
+        date: "24 Mar, 2026",
+        category: "Web App",
+        readTime: "3 min",
+        link: "/blog/ssrf-bypass"
+    },
+    {
+        title: "Kerberoasting: Entendiendo el ticket TGS a bajo nivel",
+        date: "18 Mar, 2026",
+        category: "Active Directory",
+        readTime: "5 min",
+        link: "#"
+    },
+    {
+        title: "Automatizando la exfiltración de datos con Bash y DNS",
+        date: "10 Mar, 2026",
+        category: "Tooling",
+        readTime: "2 min",
+        link: "#"
+    }
+];
+---
+
+<section class="flex flex-col gap-12 pt-24">
+    
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6" data-aos="fade-right">
+        <div class="flex flex-col gap-3">
+            <h3 class="text-3xl font-mono text-red-accent uppercase tracking-widest">04. Micro-Blog</h3>
+            <p class="text-4xl md:text-5xl font-extrabold text-white tracking-tighter leading-tight">
+                Lo que aprendí <br/>
+                <span class="text-zinc-500">esta semana.</span>
+            </p>
+        </div>
+        
+        <a href="/blog" class="group flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-red-accent transition-colors pb-2">
+            Ver registro completo
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-1 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+    </div>
+
+    <div class="flex flex-col gap-4">
+        {posts.map((post, index) => (
+            <a href={post.link} 
+               class="group relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-bg-card border border-border-subtle overflow-hidden transition-all duration-300 hover:border-red-accent/50 hover:bg-zinc-900/50"
+               data-aos="fade-up" data-aos-delay={index * 100}>
+               
+                <div class="absolute -left-10 top-1/2 -translate-y-1/2 w-20 h-20 bg-red-accent/10 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col gap-2">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-red-accent bg-red-accent/10 rounded border border-red-accent/20">
+                            {post.category}
+                        </span>
+                        <span class="text-xs font-mono text-zinc-500">{post.date}</span>
+                    </div>
+                    <h4 class="text-xl md:text-2xl font-bold text-zinc-200 group-hover:text-white transition-colors tracking-tight">
+                        {post.title}
+                    </h4>
+                </div>
+
+                <div class="relative z-10 flex items-center gap-4 mt-2 md:mt-0">
+                    <span class="text-xs font-mono text-zinc-500 hidden md:block">{post.readTime} read</span>
+                    <div class="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-white group-hover:bg-red-accent group-hover:border-red-accent transition-all duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                    </div>
+                </div>
+            </a>
+        ))}
+    </div>
+
+</section>

@@ -1,0 +1,23 @@
+/* src/styles/global.css */
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-bg-main: #09090b;
+  --color-bg-card: #121214;
+  --color-border-subtle: #27272a;
+  
+  /* Color Red Team */
+  --color-red-accent: #e11d48;
+  --color-red-hover: #be123c;
+}
+
+body {
+  background-color: var(--color-bg-main);
+  color: #a1a1aa; /* Gris claro para textos normales */
+}
+
+::selection {
+  background-color: var(--color-red-accent);
+  color: white;
+}
