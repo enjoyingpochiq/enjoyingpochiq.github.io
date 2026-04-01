@@ -1,0 +1,244 @@
+---
+// src/pages/writeups/index.astro
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+// 1. Obtenemos todos los writeups
+const allWriteups = await getCollection('ctfs');
+
+// 2. Ordenamos por fecha
+const sortedWriteups = allWriteups.sort((a, b) => {
+    return new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf();
+});
+
+// 3. Extraemos las categorías únicas para los filtros dinámicos
+const platforms = ["Todas", ...new Set(sortedWriteups.map(w => w.data.platform))];
+const operatingSystems = ["Todos", ...new Set(sortedWriteups.map(w => w.data.os))];
+const difficulties = ["Todas", ...new Set(sortedWriteups.map(w => w.data.difficulty))];
+---
+
+<Layout title="CTF Writeups | Alejandro Juan Hervás Vogt">
+    <main class="max-w-7xl mx-auto pt-2 pb-24 px-6 md:px-8 animate-fade-in">
+        
+        <a href="/" class="inline-flex items-center gap-2 text-2xl font-mono text-zinc-500 hover:text-red-accent transition-colors mb-12">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Volver al inicio
+        </a>
+
+        <header class="flex flex-col gap-6 mb-12 relative">
+            <div class="absolute -top-10 -left-10 w-40 h-40 bg-red-accent/10 blur-[60px] rounded-full pointer-events-none -z-10"></div>
+            <h3 class="text-sm font-mono text-red-accent uppercase tracking-widest">Offensive Security</h3>
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white tracking-tighter leading-tight">
+                De 0 a <br/>    
+                <span class="text-zinc-500">Root / SYSTEM.</span>
+            </h1>
+            <p class="text-zinc-400 max-w-4xl text-2xl">
+                Reportes detallados de explotación de máquinas de distintas plataformas. Fases de reconocimiento, emumeración, explotación y escalada de privilegios.
+            </p>
+        </header>
+
+        <div class="flex flex-col gap-5 mb-12 p-6 rounded-3xl bg-bg-card border border-border-subtle">
+            
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 w-full">
+                
+                <div class="relative md:col-span-6 lg:col-span-8 h-[48px]">
+                    <div class="absolute inset-y-0 left-0 flex items-center justify-center w-12 pointer-events-none text-zinc-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="searchMachine" 
+                        placeholder="Buscar máquina o técnica (ej. DCSync)..." 
+                        class="w-full h-full bg-zinc-950 border border-zinc-800 text-white rounded-xl py-3 pr-4 pl-12 focus:outline-none focus:border-red-accent/50 focus:ring-1 focus:ring-red-accent/50 transition-all font-mono text-sm placeholder:text-zinc-600 truncate"
+                    />
+                </div>
+
+                <div class="relative md:col-span-3 lg:col-span-2 h-[48px]">
+                    <select id="osFilter" class="w-full h-full bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:border-red-accent/50 focus:ring-1 focus:ring-red-accent/50 transition-all font-mono text-sm appearance-none cursor-pointer">
+                        <option value="Todos">OS: Todos</option>
+                        {operatingSystems.filter(os => os !== "Todos").map(os => (
+                            <option value={os}>{os}</option>
+                        ))}
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center justify-center w-10 pointer-events-none text-zinc-500 bg-zinc-950 rounded-r-xl border-y border-r border-transparent">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="relative md:col-span-3 lg:col-span-2 h-[48px]">
+                    <select id="diffFilter" class="w-full h-full bg-zinc-950 border border-zinc-800 text-zinc-300 rounded-xl py-3 pl-4 pr-10 focus:outline-none focus:border-red-accent/50 focus:ring-1 focus:ring-red-accent/50 transition-all font-mono text-sm appearance-none cursor-pointer">
+                        <option value="Todas">Dif: Todas</option>
+                        {difficulties.filter(diff => diff !== "Todas").map(diff => (
+                            <option value={diff}>{diff}</option>
+                        ))}
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center justify-center w-10 pointer-events-none text-zinc-500 bg-zinc-950 rounded-r-xl border-y border-r border-transparent">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-zinc-800/50" id="platformFilters">
+                <span class="text-xs font-mono text-zinc-500 uppercase tracking-wider">Plataforma:</span>
+                {platforms.map((platform) => (
+                    <button 
+                        class="filter-btn px-4 py-1.5 text-xs font-mono uppercase tracking-wider rounded-lg border transition-all duration-300
+                               data-[active=true]:bg-red-accent/10 data-[active=true]:text-red-accent data-[active=true]:border-red-accent/30
+                               data-[active=false]:bg-zinc-900 data-[active=false]:text-zinc-400 data-[active=false]:border-zinc-800 hover:data-[active=false]:border-zinc-600"
+                        data-platform={platform}
+                        data-active={platform === "Todas" ? "true" : "false"}
+                    >
+                        {platform}
+                    </button>
+                ))}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="writeupsContainer">
+            {sortedWriteups.length === 0 ? (
+                <div class="col-span-full p-8 text-center border border-dashed border-zinc-800 rounded-2xl">
+                    <p class="text-zinc-500 font-mono text-sm">No hay writeups publicados todavía.</p>
+                </div>
+            ) : (
+                sortedWriteups.map((writeup, index) => (
+                    // Inyectamos todos los atributos para el filtro JS
+                    <a href={`/writeups/${writeup.id}`} 
+                       class="writeup-card group relative flex flex-col gap-5 p-8 rounded-3xl bg-bg-card border border-border-subtle overflow-hidden transition-all duration-300 hover:border-red-accent/40 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(225,29,72,0.15)]"
+                       data-machine={writeup.data.machine.toLowerCase()} 
+                       data-platform={writeup.data.platform}
+                       data-os={writeup.data.os}
+                       data-difficulty={writeup.data.difficulty}
+                       data-tags={writeup.data.tags.join(" ").toLowerCase()}
+                       style={`animation: fadeUp 0.5s ease-out ${index * 0.1}s backwards;`}>
+                       
+                        <div class="absolute -top-16 -right-16 w-48 h-48 bg-red-accent/10 blur-[60px] rounded-full group-hover:bg-red-accent/20 transition-all pointer-events-none z-0"></div>
+
+                        <div class="relative z-10 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white transition-colors">
+                                    {writeup.data.os === "Windows" ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/></svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 0-2 2c0 1.1-.9 2-2 2-.88 0-1.59.39-2.03 1A4 4 0 0 0 4 10c0 2.2 1.8 4 4 4h.5c.3 0 .5.2.5.5v.5a2 2 0 0 1-2 2H6M20 10c0-2.2-1.8-4-4-4a2 2 0 0 0-2-2c0-1.1-.9-2-2-2M15.5 14h.5c2.2 0 4-1.8 4-4M10.5 16.5v.5a2 2 0 0 0 2 2h3"/></svg>
+                                    )}
+                                </div>
+                                <span class="text-xs font-mono text-zinc-500">{writeup.data.platform}</span>
+                            </div>
+                            
+                            <span class={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded border ${writeup.data.diffColor}`}>
+                                {writeup.data.difficulty}
+                            </span>
+                        </div>
+
+                        <div class="relative z-10 flex flex-col gap-3 flex-grow">
+                            <h4 class="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                                {writeup.data.machine}
+                            </h4>
+                            <p class="text-zinc-500 font-mono text-xs">{writeup.data.date}</p>
+                        </div>
+
+                        <div class="relative z-10 flex flex-wrap gap-2 mt-auto pt-4 border-t border-border-subtle">
+                            {writeup.data.tags.map((tag: string) => (
+                                <span class="text-xs font-mono text-zinc-500 hover:text-red-accent transition-colors">
+                                    #{tag.toLowerCase().replace(" ", "")}
+                                </span>
+                            ))}
+                        </div>
+                    </a>
+                ))
+            )}
+            
+            <div id="noWriteupsFound" class="hidden col-span-full p-8 text-center border border-dashed border-zinc-800 rounded-2xl">
+                <p class="text-zinc-500 font-mono text-sm">No se encontraron máquinas que coincidan con los filtros seleccionados.</p>
+            </div>
+        </div>
+
+    </main>
+</Layout>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchMachine') as HTMLInputElement;
+        const osFilter = document.getElementById('osFilter') as HTMLSelectElement;
+        const diffFilter = document.getElementById('diffFilter') as HTMLSelectElement;
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const writeupCards = document.querySelectorAll('.writeup-card');
+        const noResults = document.getElementById('noWriteupsFound');
+        
+        // Variables de estado de los filtros
+        let currentPlatform = 'Todas';
+        let currentOS = 'Todos';
+        let currentDiff = 'Todas';
+        let searchQuery = '';
+
+        const filterWriteups = () => {
+            let visibleCount = 0;
+
+            writeupCards.forEach((card) => {
+                const machine = card.getAttribute('data-machine') || '';
+                const tags = card.getAttribute('data-tags') || '';
+                const platform = card.getAttribute('data-platform') || '';
+                const os = card.getAttribute('data-os') || '';
+                const diff = card.getAttribute('data-difficulty') || '';
+                
+                // Comprobaciones simultáneas
+                const matchesSearch = machine.includes(searchQuery) || tags.includes(searchQuery);
+                const matchesPlatform = currentPlatform === 'Todas' || platform === currentPlatform;
+                const matchesOS = currentOS === 'Todos' || os === currentOS;
+                const matchesDiff = currentDiff === 'Todas' || diff === currentDiff;
+
+                // Solo se muestra si cumple TODOS los filtros a la vez
+                if (matchesSearch && matchesPlatform && matchesOS && matchesDiff) {
+                    (card as HTMLElement).style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    (card as HTMLElement).style.display = 'none';
+                }
+            });
+
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        };
+
+        // Event Listeners
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = (e.target as HTMLInputElement).value.toLowerCase();
+                filterWriteups();
+            });
+        }
+
+        if (osFilter) {
+            osFilter.addEventListener('change', (e) => {
+                currentOS = (e.target as HTMLSelectElement).value;
+                filterWriteups();
+            });
+        }
+
+        if (diffFilter) {
+            diffFilter.addEventListener('change', (e) => {
+                currentDiff = (e.target as HTMLSelectElement).value;
+                filterWriteups();
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.setAttribute('data-active', 'false'));
+                btn.setAttribute('data-active', 'true');
+                
+                currentPlatform = btn.getAttribute('data-platform') || 'Todas';
+                filterWriteups();
+            });
+        });
+    });
+</script>
+
+<style>
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
