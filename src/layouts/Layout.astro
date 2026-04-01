@@ -1,46 +1,56 @@
 ---
 // src/layouts/Layout.astro
-import '../styles/global.css';
 
 interface Props {
 	title: string;
+	description?: string;
+	image?: string;
 }
 
-const { title } = Astro.props;
+// Variables por defecto si no le pasamos nada (Perfecto para la portada)
+const { 
+	title, 
+	description = "Portfolio de Alejandro Juan Hervás Vogt. Junior Pentester y Red Teamer especializado en ataques web y Active Directory. CPTS en curso.",
+	image = "/og-image.jpg" // La imagen que acabas de guardar en la carpeta public/
+} = Astro.props;
+
+// Construimos la URL absoluta para que LinkedIn encuentre la imagen sin problemas
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://enjoyingpochiq.github.io');
+const imageURL = new URL(image, canonicalURL);
 ---
 
 <!doctype html>
 <html lang="es" class="scroll-smooth">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="description" content="Portfolio de Alejandro Juan Hervás Vogt. Junior Pentester y Red Teamer especializado en ataques web y Active Directory. CPTS en curso." />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+		<meta name="generator" content={Astro.generator} />
+		
 		<title>{title}</title>
-	</head>
-	<body class="font-sans antialiased relative min-h-screen selection:bg-red-accent selection:text-white">
-        
-        <div class="fixed inset-0 -z-20 h-full w-full"
-             style="background-image: linear-gradient(to right, #27272a 1px, transparent 1px), linear-gradient(to bottom, #27272a 1px, transparent 1px); background-size: 4rem 4rem; mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 80%); -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 80%);">
-        </div>
+		<meta name="description" content={description} />
+		<meta name="author" content="Alejandro Juan Hervas Vogt" />
+		<link rel="canonical" href={canonicalURL} />
 
-        <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-red-accent/15 blur-[100px] rounded-full pointer-events-none -z-10"></div>
-        
-        <main class="max-w-5xl mx-auto px-6 py-20 relative z-10 flex flex-col gap-24">
-			<slot />
-		</main>
-		<script>
-            import AOS from 'aos';
-            import 'aos/dist/aos.css'; // Importa los estilos de animación
-            
-            // Inicializamos AOS con una configuración suave
-            AOS.init({
-                duration: 800, // Duración de la animación (ms)
-                easing: 'ease-out-cubic', // Suavizado
-                once: true, // La animación solo ocurre una vez al hacer scroll
-                offset: 50, // Empieza 50px antes de que llegue al viewport
-            });
-        </script>
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalURL} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={imageURL} />
+		<meta property="og:site_name" content="Portfolio de Alejandro Juan Hervás Vogt" />
+
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content={canonicalURL} />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={imageURL} />
+
+		<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body class="bg-bg-main text-zinc-300 font-sans antialiased selection:bg-red-accent/30 selection:text-red-100 overflow-x-hidden">
+		<div class="fixed inset-0 opacity-[0.015] pointer-events-none z-50" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+		
+		<slot />
+		
 	</body>
 </html>
