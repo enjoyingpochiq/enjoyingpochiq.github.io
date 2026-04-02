@@ -1,8 +1,7 @@
 ---
 title: "Footprinting: El arte de mapear la superficie de ataque"
-date: "2026-04-01"
+date: "24 Mar, 2026"
 category: "Enumeración"
-tags: ["HTB Academy", "Infraestructure Enumeration", "Host Enumeration", "Remote Management Protocols"]
 readTime: "10 min"
 ---
 
