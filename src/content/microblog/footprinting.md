@@ -159,3 +159,109 @@ Es común que los desarrolladores:
 * Utilicen los mismos patrones de diseño y estructura de carpetas en sus proyectos públicos que en la empresa.
 * Suban por error fragmentos de código, *scripts* de automatización o archivos de configuración (`.env`).
 * En el peor de los casos, **filtren secretos directamente en el código fuente público**. Un análisis profundo de los repositorios de un empleado puede revelar direcciones de correo personales ocultas, credenciales de bases de datos o *tokens JWT hardcodeados* que abren la puerta a la infraestructura de la empresa sin lanzar un solo exploit.
+
+### Enumeración basada en el Host
+
+Una vez tengamos suficiente información relevante de como esta estructurada la infraestructura, comenzamos a realizar el reconocimiento y enumeración sobre los hosts encontrados. En dichos hosts, vamos a encontrar diferentes servicios, y a partir de estos servicios nuestro objetivo es tratar de obtener la mayor cantidad de información sobre ellos, ya sea de forma pasiva o activa. En este caso, nos vamos a centrar principalmente en una enumeración activa, esto significa que vamos a interactuar directamente con el sistema.
+
+#### FTP (File Transfer Protocol)
+
+##### ¿Qué es?
+
+File Transfer Protocol, o en español Protocolo de Transferencia de Archivos es un protocolo de red estándar utilizado para transferir archivos de un host a otro a través de una red basada en TCP. Opera en un modelo *cliente-servidor* y permite a los usuarios subir, descargar y navegar por el sistema de archivos de un servidor remoto.
+
+Al ser un protocolo antiguo, su mayor debilidad es que **transmite la información en texto plano** (incluidas las credenciales). Soporta tanto acceso autenticado (usuario y contraseña) como acceso anónimo.
+
+##### Formas de conexión
+
+Dependiendo del entorno y de las herramientas disponibles en nuestra máquina atacante, podemos interactuar con el servidor de varias formas:
+
+```bash
+# 1. Cliente FTP Estándar (El puerto 21 es opcional por defecto)
+ftp <target-ip>
+
+# 2. Usando lftp (Una versión mejorada, con soporte para comandos avanzados)
+lftp <target-ip>
+
+# 3. Vía Navegador Web
+ftp://usuario:password@<target-ip>
+```
+##### Reconocimiento y Enumeración (Recon)
+
+Antes de lanzar cualquier ataque, debemos entender a qué nos enfrentamos. Para ello vamos a realizar una serie de técnicas que nos van a permitir obtener información valiosa como la versión.
+
+1. **Identificación y Banner Grabbing**: Podemos usar Netcat para capturar el "mensaje de bienvenida" (Banner) del servicio: Esto a menudo nos revela el software exacto y la versión que está corriendo.
+
+```bash
+# Escaneo de puerto con Nmap
+nmap -p 21 <target-ip>
+
+# Banner Grabbing manual con Netcat
+nc -nv <target-ip> 21
+```
+
+2. **Enumeración de características**: Los servidores FTP tienen distintas capacidades. El comando FEAT lista qué características adicionales soporta el servidor. Podemos automatizar esto con Nmap:
+
+```bash
+nmap -p 21 --script ftp-features <target-ip>
+```
+
+3. **Fuzzing de Directorios FTP**: Muchos servidores tienen directorios ocultos o por defecto que contienen información sensible. Podemos forzar su descubrimiento usando herramientas de fuzzing de directorios web aplicadas al protocolo FTP:
+
+```bash
+gobuster dir -u ftp://<target-ip> -w /usr/share/seclists/Discovery/Web-Content/common.txt
+```
+
+##### Vectores de ataque
+
+1. **Autenticación Anónima (Anonymous Login)**: El vector más básico pero sorprendentemente común. Permite a cualquier usuario acceder sin una identidad específica para descargar archivos públicos.
+ - Usuario: anonymous o ftp
+ - Contraseña: (Cualquiera o dejar en blanco)
+
+2. **Credenciales por Defecto**: Si el acceso anónimo está deshabilitado, el siguiente paso (mucho más silencioso que un bruteforce) es probar credenciales por defecto o comunes como admin:admin, root:root, administrator:password o ftpuser:test.
+
+3. **Fuerza Bruta (Bruteforcing)**: Si lo anterior falla, podemos realizar ataques de diccionario contra el servicio utilizando herramientas especializadas.
+
+```bash
+# Fuerza bruta usando Hydra (Ataque de diccionario)
+hydra -L users.txt -P pass.txt -f ftp://<target-ip>
+
+# Fuerza bruta usando scripts de Nmap
+nmap -p 21 --script ftp-brute <target-ip>
+```
+
+4. **FTP Bounce Attack (Ataque de Rebote)**: Esta es una técnica avanzada que explota la capacidad del protocolo FTP para redirigir tráfico, enmascarando el origen del atacante. Utiliza el comando PORT del servidor FTP para enrutar datos hacia una tercera máquina, haciendo que el ataque parezca originarse desde el propio servidor FTP.
+
+```bash
+# Escaneo de red rebotado a través de Nmap
+# Hace parecer que el escaneo proviene del <FTP_server>
+nmap -b <FTP_server>:<port> <target_network>
+```
+Finalmente, es importante que en base a la versión descubierta, se realice una investigación sobre la posible existencia de vulnerabilidades públicas conocidas.
+
+##### Post-Explotación
+
+Una vez dentro, el objetivo es extraer información de valor o ganar ejecución de comandos en el servidor subyacente.
+
+**Comandos (Cheat Sheet)**
+
+| Comando | Descripción | Ejemplo de uso |
+| :--- | :--- | :--- |
+| **lcd** | Cambia el directorio en tu máquina LOCAL | lcd /home/kali/loot |
+| **cd** | Cambia el directorio en el servidor REMOTO | cd /var/www/html |
+| **ls** | Lista los archivos en el servidor | ls -la |
+| **get** | Descarga un archivo del servidor | get config.php |
+| **mget** | Descarga múltiples archivos | mget *.txt |
+| **put** | Sube un archivo al servidor | put exploit.php |
+| **mput** | Sube múltiples archivos | mput *.php |
+| **bin / ascii** | Cambia el modo de transferencia (Binario para ejecutables/zip, ASCII para texto) | bin |
+
+**Descarga Masiva (Exfiltración rápida)**
+Para no ir archivo por archivo, podemos usar wget para clonar el directorio FTP completo de forma recursiva:
+
+```bash
+wget -m ftp://anonymous:anonymous@<target-ip>
+```
+
+**Escalada: Reverse Shell a través de la Web**
+Si el servidor FTP comparte directorio con el servidor Web (por ejemplo, tenemos acceso de escritura en /var/www/html) y el servidor soporta PHP, podemos subir un payload para obtener una shell interactiva.
