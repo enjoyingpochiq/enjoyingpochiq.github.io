@@ -2,7 +2,7 @@
 
 Bienvenido al repositorio de mi portfolio personal. Este proyecto ha sido diseñado y desarrollado desde cero para reflejar mi perfil como **Junior Pentester & Red Teamer**, priorizando el rendimiento, la escalabilidad y un diseño UI/UX premium (estilo Dark/AuthKit).
 
-🌐 **[Ver Portfolio en Vivo](https://tu-dominio-o-enlace-de-vercel.com)**
+🌐 **[Ver Portfolio en Vivo](https://enjoyingpochiq.github.io/)**
 
 ---
 
@@ -30,8 +30,8 @@ Si quieres clonar este proyecto o ejecutarlo en tu máquina local:
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone [https://github.com/tu-usuario/tu-repo.git](https://github.com/tu-usuario/tu-repo.git)
-   cd tu-repo
+   git clone https://github.com/enjoyingpochiq/enjoyingpochiq.github.io
+   cd enjoyingpochiq.github.io
    ```
 
 2. **Instalar dependencias:**
