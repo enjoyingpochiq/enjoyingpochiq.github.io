@@ -5,6 +5,7 @@ export const perfil = {
   nombreCorto: 'Alejandro Hervás',
   alias: 'linkario',
   puesto: 'Pentester junior en EY',
+  foco: 'Web, infraestructura y Active Directory.',
   correo: 'alejandrohervasvogt@gmail.com',
   github: 'https://github.com/enjoyingpochiq',
   linkedin: 'https://www.linkedin.com/in/alejandro-juan-herv%C3%A1s-vogt-19a49720a/',

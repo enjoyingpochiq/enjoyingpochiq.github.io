@@ -1,6 +1,5 @@
 // Lo que comparten todas las páginas para listar y mostrar publicaciones.
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { certificaciones } from '../data/certificaciones';
 
 export type Writeup = CollectionEntry<'writeups'>;
 export type Post = CollectionEntry<'blog'>;
@@ -60,6 +59,14 @@ export function extracto(entrada: Writeup | Post, max = 180) {
   return limpio.slice(0, limpio.lastIndexOf(' ', max)) + '…';
 }
 
+// La cadena de ataque termina siempre en el premio: SYSTEM en Windows y root en lo demás
+export function cadena(w: Writeup) {
+  const pasos = w.data.cadena.filter(Boolean);
+  if (pasos.length === 0) return [];
+  const final = w.data.so.toLowerCase().includes('windows') ? 'SYSTEM' : 'root';
+  return /\b(root|system|domain admins?|administrador del dominio)\b/i.test(pasos.at(-1) ?? '') ? pasos : [...pasos, final];
+}
+
 export const urlWriteup = (w: Writeup) => `/writeups/${w.id}/`;
 export const urlPost = (p: Post) => `/blog/${p.id}/`;
 
@@ -71,6 +78,7 @@ export interface Publicacion {
   tipo: string;
   resumen: string;
   detalle?: string;
+  cadena?: string[];
 }
 
 export async function registro(): Promise<Publicacion[]> {
@@ -81,6 +89,7 @@ export async function registro(): Promise<Publicacion[]> {
     tipo: 'Write-up',
     resumen: extracto(w),
     detalle: `${w.data.plataforma}, ${DIFICULTADES[w.data.dificultad].nombre.toLowerCase()}`,
+    cadena: cadena(w),
   }));
   const dePosts = (await posts()).map((p) => ({
     titulo: p.data.titulo,
@@ -91,15 +100,6 @@ export async function registro(): Promise<Publicacion[]> {
     detalle: p.data.certificacion,
   }));
   return [...deWriteups, ...dePosts].sort((a, b) => b.fecha.valueOf() - a.fecha.valueOf());
-}
-
-// La certificación que estás preparando, con su avance
-export function enCurso() {
-  const c = certificaciones.find((c) => c.estado === 'en-curso');
-  if (!c) return undefined;
-  const total = c.modulos?.length ?? 0;
-  const hechos = c.modulos?.filter((m) => m.hecho).length ?? 0;
-  return { ...c, total, hechos, porcentaje: total ? Math.round((hechos / total) * 100) : 0 };
 }
 
 export const mismaCert = (a?: string, b?: string) =>

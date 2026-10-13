@@ -5,6 +5,7 @@ so: Windows
 dificultad: Fácil
 fecha: 2026-03-15
 tags: [Active Directory, AS-REP Roasting, BloodHound, DCSync]
+cadena: [Sesión nula RPC, AS-REP Roasting, WinRM, WriteDacl, DCSync, Pass-the-Hash]
 resumen: Explotación de AS-REP Roasting y abuso de privilegios de cuenta (GenericAll) para comprometer el dominio usando BloodHound.
 ---
 

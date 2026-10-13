@@ -42,6 +42,7 @@ tipo: writeup
 plataforma: HackTheBox
 so: Linux
 dificultad: Fácil        # fácil, media, difícil o insana
+cadena: [SMB anónimo, CVE-2007-2447]   # los pasos del ataque; root o SYSTEM se añade solo
 fecha: 2026-10-13        # si no la pones, se usa la de la última edición
 tags: [SMB, CVE-2007-2447]
 resumen: Una frase para las listas (opcional)

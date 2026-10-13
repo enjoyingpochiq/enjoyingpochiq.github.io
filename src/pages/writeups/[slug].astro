@@ -2,7 +2,8 @@
 import { render } from 'astro:content';
 import Lectura from '../../layouts/Lectura.astro';
 import Icono from '../../components/Icono.astro';
-import { writeups, DIFICULTADES, minutos, extracto } from '../../lib/contenido';
+import Cadena from '../../components/Cadena.astro';
+import { writeups, DIFICULTADES, minutos, extracto, cadena } from '../../lib/contenido';
 
 export async function getStaticPaths() {
   return (await writeups()).map((w) => ({ params: { slug: w.id }, props: { w } }));
@@ -24,11 +25,13 @@ const windows = w.data.so.toLowerCase().includes('windows');
   etiquetas={w.data.tags}
   headings={headings}
   borrador={w.data.borrador}
+  imagen={`/og/writeups/${w.id}.png`}
 >
   <Fragment slot="meta">
     <span>{w.data.plataforma}</span>
     <span class="inline-flex items-center gap-1.5"><Icono nombre={windows ? 'windows' : 'linux'} tam={15} />{w.data.so}</span>
     <span class={`rounded-md border px-2 py-0.5 text-sm font-semibold ${dificultad.clase}`}>{dificultad.nombre}</span>
   </Fragment>
+  {w.data.cadena.length > 0 && <Cadena slot="cabecera" pasos={cadena(w)} />}
   <Content />
 </Lectura>

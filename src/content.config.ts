@@ -28,6 +28,8 @@ const writeups = defineCollection({
     plataforma: z.string(),
     so: z.string(),
     dificultad: z.preprocess(normalizar, z.enum(['facil', 'media', 'dificil', 'insana'])),
+    // Los pasos que llevan de la enumeración al final: [Sesión nula RPC, AS-REP Roasting, …]
+    cadena: z.array(z.string()).default([]),
     ...comunes,
   }),
 });
