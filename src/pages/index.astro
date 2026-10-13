@@ -1,27 +1,117 @@
 ---
-// src/pages/index.astro
-import Layout from '../layouts/Layout.astro';
-import Hero from '../components/Hero.astro';
-import About from '../components/About.astro';
-import Projects from '../components/Projects.astro';
-import Writeups from '../components/Writeups.astro';
-import CTFWriteups from '../components/CTFWriteups.astro';
-import Roadmap from '../components/Roadmap.astro'; // <-- Importas el Roadmap
-import Videos from '../components/Videos.astro'; // <-- Importar
-import HallOfFame from '../components/HallOfFame.astro'; // <-- Importar
-import Footer from '../components/Footer.astro'; // <-- 1. Importamos el Footer
+import Base from '../layouts/Base.astro';
+import Icono from '../components/Icono.astro';
+import ListaPublicaciones from '../components/ListaPublicaciones.astro';
+import Certificaciones from '../components/Certificaciones.astro';
+import { perfil, herramientas } from '../data/perfil';
+import { registro, enCurso, fecha } from '../lib/contenido';
+
+const publicaciones = await registro();
+const ultimas = publicaciones.slice(0, 6);
+const preparando = enCurso();
+const ultima = publicaciones[0];
 ---
 
-<Layout title="Alejandro Juan Hervás Vogt | Junior Pentester & Red Teamer">
-	<div class="flex flex-col"></div>
-		<Hero />
-		<About />
-		<Roadmap />
-		<Projects />
-		<Writeups />
-		<CTFWriteups />
-		<Videos />
-		<HallOfFame />
-		<Footer />
-	</div>
-</Layout>
+<Base titulo={`${perfil.nombre}, ${perfil.puesto.toLowerCase()}`}>
+  <section class="relative isolate overflow-hidden border-b border-linea">
+    <div class="cuadricula absolute inset-0 -z-10" aria-hidden="true"></div>
+    <div class="absolute -top-48 right-[-10rem] -z-10 h-[30rem] w-[44rem] rounded-full bg-carmesi/12 blur-[120px]" aria-hidden="true"></div>
+    <div class="mx-auto grid max-w-6xl gap-12 px-5 pt-16 pb-16 sm:px-8 sm:pt-24 sm:pb-20 lg:grid-cols-[1fr_22rem] lg:items-end">
+      <div>
+        <h1 class="text-[clamp(2.75rem,7.5vw,5.75rem)] font-extrabold leading-[0.95] tracking-[-0.035em] text-white">
+          Alejandro Juan<br />Hervás Vogt
+        </h1>
+        <p class="mt-8 max-w-[38rem] text-lg leading-relaxed text-tenue sm:text-xl">
+          Pentester junior en EY. Audito aplicaciones web e infraestructuras, y aquí publico lo que aprendo por mi
+          cuenta: write-ups de máquinas retiradas, técnicas, investigaciones y apuntes.
+        </p>
+        <div class="mt-10 flex flex-wrap items-center gap-3">
+          <a href="/writeups/" class="rounded-lg bg-carmesi px-5 py-3 font-semibold text-white hover:bg-carmesi-oscuro">
+            Ver los write-ups
+          </a>
+          <a href="/blog/" class="rounded-lg border border-linea px-5 py-3 font-semibold text-texto hover:border-tenue">
+            Leer el blog
+          </a>
+          <a href={perfil.github} rel="me noopener" class="ml-1 p-2 text-tenue hover:text-texto" aria-label="GitHub">
+            <Icono nombre="github" tam={22} />
+          </a>
+          <a href={perfil.linkedin} rel="me noopener" class="p-2 text-tenue hover:text-texto" aria-label="LinkedIn">
+            <Icono nombre="linkedin" tam={22} />
+          </a>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-linea bg-superficie/80 p-5 font-mono text-sm leading-relaxed backdrop-blur" aria-label="Estado">
+        <p><span class="text-carmesi-claro" aria-hidden="true">$</span> whoami</p>
+        <p class="text-tenue">{perfil.alias}</p>
+        {preparando && (
+          <>
+            <p class="mt-3"><span class="text-carmesi-claro" aria-hidden="true">$</span> cat ahora.txt</p>
+            <p class="text-tenue">
+              Preparando la {preparando.nombre}: {preparando.hechos} de {preparando.total} módulos.
+            </p>
+          </>
+        )}
+        {ultima && (
+          <>
+            <p class="mt-3"><span class="text-carmesi-claro" aria-hidden="true">$</span> ls -t publicado | head -1</p>
+            <p class="text-tenue">
+              <a href={ultima.url} class="underline decoration-1 underline-offset-4 hover:text-texto">{ultima.titulo}</a>, {fecha(ultima.fecha)}
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <div class="mx-auto flex max-w-6xl flex-col gap-24 px-5 pt-20 sm:px-8">
+    <section aria-labelledby="lo-ultimo">
+      <div class="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+        <h2 id="lo-ultimo" class="text-3xl font-bold tracking-tight text-texto">Lo último</h2>
+        <p class="flex gap-5 text-tenue">
+          <a href="/writeups/" class="underline decoration-1 underline-offset-4 hover:text-texto">Todos los write-ups</a>
+          <a href="/blog/" class="underline decoration-1 underline-offset-4 hover:text-texto">Todo el blog</a>
+        </p>
+      </div>
+      <ListaPublicaciones publicaciones={ultimas} />
+    </section>
+
+    <section id="certificaciones" aria-labelledby="titulo-certs">
+      <h2 id="titulo-certs" class="text-3xl font-bold tracking-tight text-texto">Certificaciones</h2>
+      <p class="mt-3 mb-6 max-w-2xl text-tenue">Las que tengo y las que preparo. Los apuntes de cada una están en el blog.</p>
+      <Certificaciones />
+    </section>
+
+    <section id="sobre-mi" aria-labelledby="titulo-sobre-mi" class="grid gap-12 lg:grid-cols-[1fr_1fr]">
+      <div>
+        <h2 id="titulo-sobre-mi" class="text-3xl font-bold tracking-tight text-texto">Sobre mí</h2>
+        <div class="mt-6 flex max-w-[62ch] flex-col gap-4 text-lg leading-relaxed text-tenue">
+          <p>
+            Trabajo en el equipo de pentesting de EY, auditando aplicaciones web e infraestructuras. Lo que veo en los
+            clientes se queda en sus informes; lo que aprendo por mi cuenta, en laboratorios y máquinas retiradas, lo
+            publico aquí.
+          </p>
+          <p>
+            Antes de pasar a la siguiente técnica, quiero entender por qué funciona la anterior. Y si repito algo dos
+            veces, acabo escribiendo un script para no hacerlo una tercera.
+          </p>
+          <p>
+            Un hallazgo no sirve de nada si quien lo recibe no lo entiende, así que cuido tanto el informe como la
+            explotación.
+          </p>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold text-texto lg:mt-2">Herramientas que más uso</h3>
+        <dl class="mt-6 border-t border-linea">
+          {herramientas.map((h) => (
+            <div class="grid gap-1 border-b border-linea py-4 sm:grid-cols-[8.5rem_1fr] sm:gap-6">
+              <dt class="font-mono font-semibold text-texto">{h.nombre}</dt>
+              <dd class="text-tenue">{h.uso}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  </div>
+</Base>

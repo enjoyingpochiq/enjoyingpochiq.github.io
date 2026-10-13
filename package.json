@@ -12,11 +12,19 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/atkinson-hyperlegible-mono": "^5.3.0",
+    "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.2",
-    "aos": "^2.3.4",
     "astro": "^6.1.1",
+    "rehype-callouts": "^2.2.0",
     "remark-breaks": "^4.0.0",
     "tailwindcss": "^4.2.2"
+  },
+  "devDependencies": {
+    "github-slugger": "^2.0.0",
+    "yaml": "^2.9.1"
   }
 }

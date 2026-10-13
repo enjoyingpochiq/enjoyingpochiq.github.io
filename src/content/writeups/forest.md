@@ -1,11 +1,11 @@
 ---
-machine: "Forest"
-platform: "HackTheBox"
-os: "Windows"
-difficulty: "Fácil"
-diffColor: "text-green-400 bg-green-400/10 border-green-400/20"
-date: "15 Mar, 2026"
-tags: ["Active Directory", "AS-REP Roasting", "BloodHound", "DCSync"]
+maquina: Forest
+plataforma: HackTheBox
+so: Windows
+dificultad: Fácil
+fecha: 2026-03-15
+tags: [Active Directory, AS-REP Roasting, BloodHound, DCSync]
+resumen: Explotación de AS-REP Roasting y abuso de privilegios de cuenta (GenericAll) para comprometer el dominio usando BloodHound.
 ---
 
 Forest es una excelente máquina introductoria para ataques contra Active Directory. La intrusión inicial se basa en la enumeración de usuarios mediante SMB/RPC y un ataque de AS-REP Roasting. Para la escalada de privilegios, explotaremos permisos excesivos (GenericAll) mapeados con BloodHound para realizar un ataque DCSync.

@@ -1,23 +1,192 @@
-/* src/styles/global.css */
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Colores y letras de toda la web.
+   Atkinson Hyperlegible está hecha para no confundir letras parecidas (0/O, l/1/I),
+   justo lo que importa en comandos, hashes e IPs. */
 @theme {
-  --color-bg-main: #09090b;
-  --color-bg-card: #121214;
-  --color-border-subtle: #27272a;
-  
-  /* Color Red Team */
-  --color-red-accent: #e11d48;
-  --color-red-hover: #be123c;
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-fondo: #141518;
+  --color-superficie: #1b1d21;
+  --color-linea: #2b2e34;
+  --color-texto: #ecebe8;
+  --color-tenue: #a6a6ad;
+  --color-carmesi: #e11d48;
+  --color-carmesi-oscuro: #be123c;
+  --color-carmesi-claro: #fb7185;
+}
+
+html {
+  color-scheme: dark;
+  background-color: var(--color-fondo);
+  scroll-padding-top: 5rem;
 }
 
 body {
-  background-color: var(--color-bg-main);
-  color: #a1a1aa; /* Gris claro para textos normales */
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background-color: var(--color-red-accent);
-  color: white;
+  background-color: var(--color-carmesi);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-carmesi-claro);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* La cuadrícula de fondo de la cabecera de la portada */
+.cuadricula {
+  background-image:
+    linear-gradient(to right, #24262b 1px, transparent 1px),
+    linear-gradient(to bottom, #24262b 1px, transparent 1px);
+  background-size: 3.5rem 3.5rem;
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.8), transparent 85%);
+}
+
+/* ── Texto de los write-ups y del blog ─────────────────────────────────────── */
+.prosa {
+  --tw-prose-invert-body: #d9d8d4;
+  --tw-prose-invert-headings: var(--color-texto);
+  --tw-prose-invert-lead: var(--color-tenue);
+  --tw-prose-invert-links: var(--color-carmesi-claro);
+  --tw-prose-invert-bold: var(--color-texto);
+  --tw-prose-invert-counters: var(--color-tenue);
+  --tw-prose-invert-bullets: var(--color-carmesi);
+  --tw-prose-invert-hr: var(--color-linea);
+  --tw-prose-invert-quotes: var(--color-texto);
+  --tw-prose-invert-quote-borders: var(--color-carmesi);
+  --tw-prose-invert-captions: var(--color-tenue);
+  --tw-prose-invert-code: #f9c0cb;
+  --tw-prose-invert-pre-code: #e6e6e6;
+  --tw-prose-invert-pre-bg: var(--color-superficie);
+  --tw-prose-invert-th-borders: var(--color-linea);
+  --tw-prose-invert-td-borders: var(--color-linea);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  max-width: 72ch;
+  overflow-wrap: break-word;
+}
+
+.prosa a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.prosa a:hover {
+  color: #fff;
+}
+
+.prosa h2 {
+  margin-top: 2.75em;
+  padding-top: 0.25em;
+  font-size: 1.6em;
+  letter-spacing: -0.01em;
+}
+.prosa h3 {
+  margin-top: 2em;
+  font-size: 1.25em;
+}
+
+/* Código en línea: sin las comillas que pone el plugin */
+.prosa :not(pre) > code {
+  font-weight: 500;
+  font-size: 0.9em;
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-linea);
+  overflow-wrap: anywhere;
+}
+.prosa code::before,
+.prosa code::after {
+  content: none;
+}
+
+/* Bloques de código */
+.prosa pre {
+  background-color: var(--color-superficie) !important;
+  border: 1px solid var(--color-linea);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  overflow-x: auto;
+}
+.prosa pre code {
+  font-family: var(--font-mono);
+}
+.bloque-codigo {
+  margin-block: 1.5em;
+}
+.bloque-codigo .barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0.5rem 0.3rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-tenue);
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-linea);
+  border-bottom-color: #23252a;
+  border-radius: 10px 10px 0 0;
+}
+.bloque-codigo .barra button {
+  font-family: var(--font-sans);
+  padding: 0.15rem 0.6rem;
+  color: var(--color-tenue);
+  border: 1px solid var(--color-linea);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.bloque-codigo .barra button:hover {
+  color: var(--color-texto);
+  border-color: var(--color-tenue);
+}
+.bloque-codigo pre {
+  margin: 0;
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+}
+
+/* Tablas anchas: se desplazan dentro de su caja, no la página entera */
+.prosa table {
+  display: block;
+  overflow-x: auto;
+  font-size: 0.9375rem;
+}
+.prosa th {
+  white-space: nowrap;
+}
+
+.prosa img {
+  border-radius: 8px;
+  border: 1px solid var(--color-linea);
+}
+
+.prosa mark {
+  background-color: rgb(225 29 72 / 0.25);
+  color: var(--color-texto);
+  padding: 0 0.15em;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

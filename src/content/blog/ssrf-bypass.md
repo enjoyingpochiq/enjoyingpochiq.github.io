@@ -1,8 +1,10 @@
 ---
-title: "Bypass de filtros SSRF usando redirecciones DNS personalizadas"
-date: "24 Mar, 2026"
-category: "Web App"
-readTime: "3 min"
+titulo: Bypass de filtros SSRF usando redirecciones DNS personalizadas
+tipo: técnica
+fecha: 2026-03-24
+tags: [Web, SSRF]
+# Oculto hasta confirmar que no sale de una auditoría de un cliente
+borrador: true
 ---
 
 Ayer durante una auditoría me encontré con un panel de control que permitía exportar reportes a un webhook externo (clásico vector de **SSRF**).  

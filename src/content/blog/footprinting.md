@@ -1,8 +1,9 @@
 ---
-title: "Footprinting: El arte de mapear la superficie de ataque"
-date: "24 Mar, 2026"
-category: "Enumeración"
-readTime: "10 min"
+titulo: "Footprinting: el arte de mapear la superficie de ataque"
+tipo: apuntes
+certificacion: CPTS
+fecha: 2026-03-24
+tags: [Enumeración, Footprinting]
 ---
 
 Acabo de terminar el modulo de **Footprinting** de la academia de HackTheBox durante mi proceso de preparación para la CPTS (Certified Penetration Tester Specialist), y gracias a este modulo he aprendido la importancia de hacer enfasis en el proceso de enumeración dentro de la metodología.

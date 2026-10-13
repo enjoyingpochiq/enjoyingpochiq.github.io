@@ -1,0 +1,154 @@
+---
+// Página de lectura: un write-up o una entrada del blog, con su índice al lado.
+import type { MarkdownHeading } from 'astro';
+import Base from './Base.astro';
+import Icono from '../components/Icono.astro';
+import { fecha as formatoFecha } from '../lib/contenido';
+
+interface Props {
+  titulo: string;
+  tituloPagina: string;
+  descripcion: string;
+  miga: { texto: string; href: string };
+  fecha: Date;
+  minutos: number;
+  etiquetas: string[];
+  headings: MarkdownHeading[];
+  borrador?: boolean;
+}
+
+const { titulo, tituloPagina, descripcion, miga, fecha, minutos, etiquetas, headings, borrador } = Astro.props;
+// El índice coge el nivel de título más alto que use la nota y el siguiente
+const conTitulo = headings.filter((h) => h.depth >= 2);
+const nivelBase = conTitulo.length ? Math.min(...conTitulo.map((h) => h.depth)) : 2;
+const indice = conTitulo.filter((h) => h.depth <= nivelBase + 1);
+const conIndice = indice.length >= 3;
+---
+
+<Base titulo={tituloPagina} descripcion={descripcion} articulo={{ publicado: fecha, etiquetas }}>
+  <article class="mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-14">
+    <a href={miga.href} class="inline-flex items-center gap-1 text-tenue hover:text-texto">
+      <Icono nombre="flecha-izquierda" tam={16} />
+      {miga.texto}
+    </a>
+
+    <header class="mt-6 max-w-[72ch]">
+      {borrador && (
+        <p class="mb-4 inline-block rounded-md border border-amber-300/40 px-2.5 py-1 text-sm text-amber-300">
+          Borrador: solo se ve en local
+        </p>
+      )}
+      <h1 class="text-[clamp(2.25rem,5vw,3.5rem)] font-extrabold leading-[1.05] tracking-[-0.025em] text-white">
+        {titulo}
+      </h1>
+      <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-tenue">
+        <slot name="meta" />
+        <time datetime={fecha.toISOString()}>{formatoFecha(fecha)}</time>
+        <span>{minutos} min de lectura</span>
+      </div>
+      {etiquetas.length > 0 && (
+        <ul class="mt-4 flex flex-wrap gap-2" aria-label="Etiquetas">
+          {etiquetas.map((e) => (
+            <li class="rounded-md bg-superficie px-2 py-0.5 text-sm text-tenue ring-1 ring-linea">{e}</li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    {conIndice && (
+      <details class="mt-8 rounded-lg border border-linea px-4 py-3 lg:hidden">
+        <summary class="cursor-pointer font-semibold text-texto">Índice</summary>
+        <ol class="mt-3 flex flex-col gap-1.5 text-tenue">
+          {indice.map((h) => (
+            <li class={h.depth > nivelBase ? 'pl-4 text-sm' : ''}>
+              <a href={`#${h.slug}`} class="hover:text-texto">{h.text}</a>
+            </li>
+          ))}
+        </ol>
+      </details>
+    )}
+
+    <div class={`mt-10 grid gap-12 ${conIndice ? 'lg:grid-cols-[minmax(0,1fr)_15rem]' : ''}`}>
+      <div class="prose prose-invert prosa min-w-0">
+        <slot />
+      </div>
+      {conIndice && (
+        <aside class="hidden lg:block">
+          <nav class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto border-l border-linea pl-5" aria-label="Índice">
+            <p class="font-semibold text-texto">Índice</p>
+            <ol class="mt-3 flex flex-col gap-2 text-sm text-tenue">
+              {indice.map((h) => (
+                <li class={h.depth > nivelBase ? 'pl-3' : ''}>
+                  <a href={`#${h.slug}`} class="block hover:text-texto" data-indice={h.slug}>{h.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </aside>
+      )}
+    </div>
+
+    <p class="mt-16 border-t border-linea pt-8">
+      <a href={miga.href} class="inline-flex items-center gap-1 text-tenue hover:text-texto">
+        <Icono nombre="flecha-izquierda" tam={16} />
+        Volver a {miga.texto.toLowerCase()}
+      </a>
+    </p>
+  </article>
+</Base>
+
+<script>
+  // Cada bloque de código lleva encima una barra con su lenguaje y un botón de copiar
+  for (const pre of document.querySelectorAll<HTMLPreElement>('.prosa pre')) {
+    const caja = document.createElement('div');
+    caja.className = 'bloque-codigo';
+    const barra = document.createElement('div');
+    barra.className = 'barra';
+    const lenguaje = document.createElement('span');
+    const idioma = pre.dataset.language ?? '';
+    lenguaje.textContent = idioma && idioma !== 'plaintext' ? idioma : '';
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.textContent = 'Copiar';
+    boton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText);
+        boton.textContent = 'Copiado';
+      } catch {
+        boton.textContent = 'No se ha podido copiar';
+      }
+      setTimeout(() => (boton.textContent = 'Copiar'), 1800);
+    });
+    barra.append(lenguaje, boton);
+    pre.replaceWith(caja);
+    caja.append(barra, pre);
+  }
+
+  // En el índice, marca la sección que estás leyendo
+  const enlaces = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('[data-indice]')].map((a) => [a.dataset.indice, a]),
+  );
+  if (enlaces.size) {
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const e of entradas) {
+          if (!e.isIntersecting) continue;
+          for (const a of enlaces.values()) a.removeAttribute('aria-current');
+          enlaces.get(e.target.id)?.setAttribute('aria-current', 'true');
+        }
+      },
+      { rootMargin: '-15% 0px -75% 0px' },
+    );
+    for (const id of enlaces.keys()) {
+      const titulo = id ? document.getElementById(id) : null;
+      if (titulo) observador.observe(titulo);
+    }
+  }
+</script>
+
+<style>
+  [data-indice][aria-current='true'] {
+    color: var(--color-texto);
+    font-weight: 600;
+  }
+</style>
