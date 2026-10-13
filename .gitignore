@@ -1,0 +1,12 @@
+# Lo que se genera solo: no se sube
+node_modules/
+dist/
+.astro/
+
+# Restos de editores y del sistema
+.DS_Store
+.vscode/
+.idea/
+*.log
+.env
+.env.*

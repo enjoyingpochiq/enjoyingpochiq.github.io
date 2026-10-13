@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base titulo="Página no encontrada | Alejandro Hervás">
+  <div class="mx-auto max-w-6xl px-5 pt-20 sm:px-8 sm:pt-28">
+    <p class="font-mono text-tenue">HTTP/1.1 404 Not Found</p>
+    <h1 class="mt-4 text-[clamp(2.5rem,6vw,4rem)] font-extrabold leading-none tracking-[-0.03em] text-white">
+      Esta página no existe
+    </h1>
+    <p class="mt-6 max-w-xl text-lg text-tenue">
+      Puede que la dirección esté mal escrita o que la publicación se haya retirado.
+    </p>
+    <p class="mt-10 flex flex-wrap gap-3">
+      <a href="/" class="rounded-lg bg-carmesi px-5 py-3 font-semibold text-white hover:bg-carmesi-oscuro">Ir a la portada</a>
+      <a href="/writeups/" class="rounded-lg border border-linea px-5 py-3 font-semibold text-texto hover:border-tenue">Ver los write-ups</a>
+      <a href="/blog/" class="rounded-lg border border-linea px-5 py-3 font-semibold text-texto hover:border-tenue">Leer el blog</a>
+    </p>
+  </div>
+</Base>

@@ -1,0 +1,62 @@
+---
+import '@fontsource-variable/atkinson-hyperlegible-next';
+import '@fontsource-variable/atkinson-hyperlegible-mono';
+import 'rehype-callouts/theme/obsidian';
+import '../styles/global.css';
+import Cabecera from '../components/Cabecera.astro';
+import Pie from '../components/Pie.astro';
+import { perfil } from '../data/perfil';
+
+interface Props {
+  titulo: string;
+  descripcion?: string;
+  imagen?: string;
+  articulo?: { publicado: Date; etiquetas?: string[] };
+}
+
+const { titulo, descripcion = perfil.descripcion, imagen = '/os-image.png', articulo } = Astro.props;
+const canonica = new URL(Astro.url.pathname, Astro.site);
+const imagenUrl = new URL(imagen, Astro.site);
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo}</title>
+    <meta name="description" content={descripcion} />
+    <meta name="author" content={perfil.nombre} />
+    <link rel="canonical" href={canonica} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title={`Publicaciones de ${perfil.nombreCorto}`} href="/rss.xml" />
+    <meta name="theme-color" content="#141518" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <meta property="og:type" content={articulo ? 'article' : 'website'} />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:site_name" content={perfil.nombre} />
+    <meta property="og:url" content={canonica} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:image" content={imagenUrl} />
+    {articulo && <meta property="article:published_time" content={articulo.publicado.toISOString()} />}
+    {articulo?.etiquetas?.map((e) => <meta property="article:tag" content={e} />)}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={titulo} />
+    <meta name="twitter:description" content={descripcion} />
+    <meta name="twitter:image" content={imagenUrl} />
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <a href="#contenido" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-md focus:bg-carmesi focus:text-white">
+      Saltar al contenido
+    </a>
+    <Cabecera />
+    <main id="contenido" class="flex-1">
+      <slot />
+    </main>
+    <Pie />
+  </body>
+</html>
