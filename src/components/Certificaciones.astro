@@ -1,77 +1,82 @@
 ---
+// Tus certificaciones, de src/data/certificaciones.ts: primero la que preparas, luego las que tienes y
+// al final las pendientes. Cabe en una columna estrecha (la portada la pone al lado de «Lo último»).
 import Icono from './Icono.astro';
 import { certificaciones } from '../data/certificaciones';
 import { posts, mismaCert } from '../lib/contenido';
 
 const todos = await posts();
 const ESTADOS = {
-  obtenida: { texto: 'Obtenida', clase: 'text-emerald-300' },
-  'en-curso': { texto: 'En curso', clase: 'text-carmesi-claro' },
-  pendiente: { texto: 'Pendiente', clase: 'text-tenue' },
+  'en-curso': { texto: 'En curso', clase: 'text-carmesi-claro', orden: 0 },
+  obtenida: { texto: 'Obtenida', clase: 'text-emerald-300', orden: 1 },
+  pendiente: { texto: 'Pendiente', clase: 'text-tenue', orden: 2 },
 } as const;
 
-const filas = certificaciones.map((c) => {
-  const total = c.modulos?.length ?? 0;
-  const hechos = c.modulos?.filter((m) => m.hecho).length ?? 0;
-  const apuntes = todos.filter((p) => mismaCert(p.data.certificacion, c.id) || mismaCert(p.data.certificacion, c.nombre)).length;
-  return { ...c, total, hechos, apuntes };
-});
+const filas = certificaciones
+  .map((c, i) => {
+    const total = c.modulos?.length ?? 0;
+    const hechos = c.modulos?.filter((m) => m.hecho).length ?? 0;
+    const apuntes = todos.filter((p) => mismaCert(p.data.certificacion, c.id) || mismaCert(p.data.certificacion, c.nombre)).length;
+    return { ...c, total, hechos, apuntes, i };
+  })
+  .sort((a, b) => ESTADOS[a.estado].orden - ESTADOS[b.estado].orden || a.i - b.i);
 ---
 
 <ol class="border-t border-linea">
   {filas.map((c) => (
-    <li class="grid gap-x-8 gap-y-2 border-b border-linea py-5 sm:grid-cols-[8.5rem_1fr]">
-      <p class={`text-sm font-semibold ${ESTADOS[c.estado].clase}`}>
-        {ESTADOS[c.estado].texto}{c.año && <span class="font-normal text-tenue"> en {c.año}</span>}
-      </p>
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h3 class="text-lg font-semibold text-texto">
-            {c.nombre} <span class="font-normal text-tenue">de {c.emisor}</span>
-          </h3>
-          <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-            {c.apuntes > 0 && (
-              <a href={`/blog/?cert=${c.id}`} class="text-carmesi-claro underline decoration-1 underline-offset-4 hover:text-white">
-                {c.apuntes === 1 ? '1 apunte publicado' : `${c.apuntes} apuntes publicados`}
-              </a>
-            )}
-            {c.credencial && (
-              <a href={c.credencial} rel="noopener" class="inline-flex items-center gap-1.5 text-carmesi-claro underline decoration-1 underline-offset-4 hover:text-white">
-                Ver la credencial <Icono nombre="externo" tam={14} />
-              </a>
-            )}
-          </div>
-        </div>
-
-        {c.total > 0 && (
-          <div class="max-w-xl">
-            <div class="flex items-center gap-4">
-              <div
-                class="h-2 flex-1 overflow-hidden rounded-full bg-superficie ring-1 ring-linea"
-                role="progressbar"
-                aria-label={`Módulos de ${c.nombre} terminados`}
-                aria-valuemin="0"
-                aria-valuemax={c.total}
-                aria-valuenow={c.hechos}
-              >
-                <div class="h-full rounded-full bg-carmesi" style={`width: ${(c.hechos / c.total) * 100}%`}></div>
-              </div>
-              <p class="shrink-0 text-sm tabular-nums text-tenue">{c.hechos} de {c.total} módulos</p>
-            </div>
-            <details class="group mt-3">
-              <summary class="cursor-pointer text-sm text-tenue hover:text-texto">Ver los módulos</summary>
-              <ul class="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
-                {c.modulos!.map((m) => (
-                  <li class={`flex items-start gap-2 ${m.hecho ? 'text-texto' : 'text-tenue'}`}>
-                    <span aria-hidden="true" class={m.hecho ? 'text-emerald-300' : 'text-tenue/60'}>{m.hecho ? '✓' : '○'}</span>
-                    <span>{m.nombre}<span class="sr-only">{m.hecho ? ' (terminado)' : ' (pendiente)'}</span></span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </div>
-        )}
+    <li class="flex flex-col gap-3 border-b border-linea py-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 class="text-lg font-semibold text-texto">
+          {c.nombre} <span class="font-normal text-tenue">de {c.emisor}</span>
+        </h3>
+        <p class={`text-sm font-semibold ${ESTADOS[c.estado].clase}`}>
+          {ESTADOS[c.estado].texto}{c.año && <span class="font-normal text-tenue"> en {c.año}</span>}
+        </p>
       </div>
+
+      {c.total > 0 && (
+        <div>
+          <div class="flex items-center gap-3">
+            <div
+              class="h-2 flex-1 overflow-hidden rounded-full bg-superficie ring-1 ring-linea"
+              role="progressbar"
+              aria-label={`Módulos de ${c.nombre} terminados`}
+              aria-valuemin="0"
+              aria-valuemax={c.total}
+              aria-valuenow={c.hechos}
+            >
+              <div class="h-full rounded-full bg-carmesi" style={`width: ${(c.hechos / c.total) * 100}%`}></div>
+            </div>
+            <p class="shrink-0 text-sm tabular-nums text-tenue">{c.hechos} de {c.total} módulos</p>
+          </div>
+          <details class="mt-3">
+            <summary class="cursor-pointer text-sm text-tenue hover:text-texto">Ver los módulos</summary>
+            <ul class="mt-3 flex flex-col gap-1.5 text-sm">
+              {c.modulos!.map((m) => (
+                <li class={`flex items-start gap-2 ${m.hecho ? 'text-texto' : 'text-tenue'}`}>
+                  <span aria-hidden="true" class={m.hecho ? 'text-emerald-300' : 'text-tenue/60'}>{m.hecho ? '✓' : '○'}</span>
+                  <span>{m.nombre}<span class="sr-only">{m.hecho ? ' (terminado)' : ' (pendiente)'}</span></span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      )}
+
+      {(c.apuntes > 0 || c.credencial) && (
+        <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+          {c.apuntes > 0 && (
+            <a href={`/blog/?cert=${c.id}`} class="text-carmesi-claro underline decoration-1 underline-offset-4 hover:text-white">
+              {c.apuntes === 1 ? '1 apunte publicado' : `${c.apuntes} apuntes publicados`}
+            </a>
+          )}
+          {c.credencial && (
+            <a href={c.credencial} rel="noopener" class="inline-flex items-center gap-1.5 text-carmesi-claro underline decoration-1 underline-offset-4 hover:text-white">
+              Ver la credencial <Icono nombre="externo" tam={14} />
+            </a>
+          )}
+        </div>
+      )}
     </li>
   ))}
 </ol>

@@ -1,7 +1,8 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Icono from '../../components/Icono.astro';
-import { writeups, DIFICULTADES, extracto, fecha, urlWriteup } from '../../lib/contenido';
+import Cadena from '../../components/Cadena.astro';
+import { writeups, DIFICULTADES, extracto, fecha, urlWriteup, cadena } from '../../lib/contenido';
 
 const todos = await writeups();
 const plataformas = [...new Set(todos.map((w) => w.data.plataforma))].sort();
@@ -12,7 +13,7 @@ const dificultades = (Object.keys(DIFICULTADES) as (keyof typeof DIFICULTADES)[]
 const conFiltros = todos.length > 3;
 ---
 
-<Base titulo="Write-ups | Alejandro Hervás" descripcion="Write-ups de máquinas retiradas de HackTheBox y otras plataformas: reconocimiento, explotación y escalada de privilegios.">
+<Base titulo="Write-ups | Alejandro Hervás" imagen="/og/writeups.png" descripcion="Write-ups de máquinas retiradas de HackTheBox y otras plataformas: reconocimiento, explotación y escalada de privilegios.">
   <div class="mx-auto max-w-6xl px-5 pt-14 sm:px-8 sm:pt-20">
     <header class="max-w-3xl">
       <h1 class="text-[clamp(2.5rem,6vw,4rem)] font-extrabold leading-none tracking-[-0.03em] text-white">Write-ups</h1>
@@ -59,7 +60,7 @@ const conFiltros = todos.length > 3;
               data-plataforma={w.data.plataforma}
               data-so={w.data.so}
               data-dificultad={w.data.dificultad}
-              data-texto={[w.data.maquina, ...w.data.tags, extracto(w)].join(' ').toLowerCase()}
+              data-texto={[w.data.maquina, ...w.data.tags, ...w.data.cadena, extracto(w)].join(' ').toLowerCase()}
             >
               <div class="flex items-center justify-between gap-3 text-sm text-tenue">
                 <span class="inline-flex items-center gap-1.5">
@@ -72,9 +73,12 @@ const conFiltros = todos.length > 3;
                 <a href={urlWriteup(w)} class="after:absolute after:inset-0 group-hover:text-carmesi-claro">{w.data.maquina}</a>
               </h2>
               <p class="flex-1 text-tenue">{extracto(w, 150)}</p>
-              <p class="text-sm text-tenue">
-                <time datetime={w.data.fecha.toISOString()}>{fecha(w.data.fecha)}</time>{w.data.tags.length > 0 && <span>, {w.data.tags.slice(0, 3).join(', ')}</span>}
-              </p>
+              {w.data.cadena.length > 0 ? (
+                <div class="border-t border-linea pt-4"><Cadena pasos={cadena(w)} compacta /></div>
+              ) : (
+                w.data.tags.length > 0 && <p class="text-sm text-tenue">{w.data.tags.slice(0, 3).join(', ')}</p>
+              )}
+              <p class="text-sm text-tenue"><time datetime={w.data.fecha.toISOString()}>{fecha(w.data.fecha)}</time></p>
             </li>
           );
         })}

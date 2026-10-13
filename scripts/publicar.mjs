@@ -179,7 +179,18 @@ for (const ruta of ficheros.filter((f) => f.endsWith('.md'))) {
       problemas.push(`${rel}: a este write-up le falta ${faltan.map((f) => `«${f}»`).join(', ')} (dificultad: fácil, media, difícil o insana)`);
       continue;
     }
-    campos = { maquina: String(datos.maquina ?? datos.machine ?? nombre), plataforma: String(plataforma), so: String(so), dificultad, ...comunes };
+    // cadena: [Sesión nula RPC, AS-REP Roasting, DCSync] o «Sesión nula RPC → AS-REP Roasting → DCSync»
+    let cadena = datos.cadena ?? [];
+    if (typeof cadena === 'string') cadena = cadena.split(/\s*(?:→|->|›|,)\s*/);
+    cadena = [].concat(cadena).map((p) => String(p).trim()).filter(Boolean);
+    campos = {
+      maquina: String(datos.maquina ?? datos.machine ?? nombre),
+      plataforma: String(plataforma),
+      so: String(so),
+      dificultad,
+      ...(cadena.length ? { cadena } : {}),
+      ...comunes,
+    };
   } else {
     const cert = datos.certificacion ?? datos.cert;
     campos = { titulo: String(datos.titulo ?? datos.title ?? nombre), tipo, ...(cert ? { certificacion: String(cert) } : {}), ...comunes };

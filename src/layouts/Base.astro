@@ -14,7 +14,7 @@ interface Props {
   articulo?: { publicado: Date; etiquetas?: string[] };
 }
 
-const { titulo, descripcion = perfil.descripcion, imagen = '/os-image.png', articulo } = Astro.props;
+const { titulo, descripcion = perfil.descripcion, imagen = '/og/inicio.png', articulo } = Astro.props;
 const canonica = new URL(Astro.url.pathname, Astro.site);
 const imagenUrl = new URL(imagen, Astro.site);
 ---
@@ -30,6 +30,7 @@ const imagenUrl = new URL(imagen, Astro.site);
     <link rel="canonical" href={canonica} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="alternate" type="application/rss+xml" title={`Publicaciones de ${perfil.nombreCorto}`} href="/rss.xml" />
     <meta name="theme-color" content="#141518" />
@@ -42,6 +43,9 @@ const imagenUrl = new URL(imagen, Astro.site);
     <meta property="og:title" content={titulo} />
     <meta property="og:description" content={descripcion} />
     <meta property="og:image" content={imagenUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={titulo} />
     {articulo && <meta property="article:published_time" content={articulo.publicado.toISOString()} />}
     {articulo?.etiquetas?.map((e) => <meta property="article:tag" content={e} />)}
     <meta name="twitter:card" content="summary_large_image" />

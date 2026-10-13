@@ -1,5 +1,6 @@
 ---
 // Una publicación por fila: fecha, tipo y título con su resumen.
+import Cadena from './Cadena.astro';
 import { fecha, type Publicacion } from '../lib/contenido';
 
 interface Props {
@@ -25,7 +26,11 @@ const { publicaciones, vacio = 'Todavía no hay nada publicado.' } = Astro.props
               {p.titulo}
             </a>
           </h3>
-          {p.resumen && <p class="mt-1 max-w-[68ch] text-tenue">{p.resumen}</p>}
+          {p.cadena?.length ? (
+            <div class="mt-1.5"><Cadena pasos={p.cadena} compacta /></div>
+          ) : (
+            p.resumen && <p class="mt-1 max-w-[68ch] text-tenue">{p.resumen}</p>
+          )}
         </div>
       </li>
     ))}

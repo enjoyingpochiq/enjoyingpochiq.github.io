@@ -4,11 +4,10 @@ import Icono from '../components/Icono.astro';
 import ListaPublicaciones from '../components/ListaPublicaciones.astro';
 import Certificaciones from '../components/Certificaciones.astro';
 import { perfil, herramientas } from '../data/perfil';
-import { registro, enCurso, fecha } from '../lib/contenido';
+import { registro, fecha } from '../lib/contenido';
 
 const publicaciones = await registro();
 const ultimas = publicaciones.slice(0, 6);
-const preparando = enCurso();
 const ultima = publicaciones[0];
 ---
 
@@ -44,14 +43,8 @@ const ultima = publicaciones[0];
       <div class="rounded-xl border border-linea bg-superficie/80 p-5 font-mono text-sm leading-relaxed backdrop-blur" aria-label="Estado">
         <p><span class="text-carmesi-claro" aria-hidden="true">$</span> whoami</p>
         <p class="text-tenue">{perfil.alias}</p>
-        {preparando && (
-          <>
-            <p class="mt-3"><span class="text-carmesi-claro" aria-hidden="true">$</span> cat ahora.txt</p>
-            <p class="text-tenue">
-              Preparando la {preparando.nombre}: {preparando.hechos} de {preparando.total} módulos.
-            </p>
-          </>
-        )}
+        <p class="mt-3"><span class="text-carmesi-claro" aria-hidden="true">$</span> cat foco.txt</p>
+        <p class="text-tenue">{perfil.foco}</p>
         {ultima && (
           <>
             <p class="mt-3"><span class="text-carmesi-claro" aria-hidden="true">$</span> ls -t publicado | head -1</p>
@@ -65,22 +58,22 @@ const ultima = publicaciones[0];
   </section>
 
   <div class="mx-auto flex max-w-6xl flex-col gap-24 px-5 pt-20 sm:px-8">
-    <section aria-labelledby="lo-ultimo">
-      <div class="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+    <div class="grid gap-20 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-14">
+      <section aria-labelledby="lo-ultimo">
         <h2 id="lo-ultimo" class="text-3xl font-bold tracking-tight text-texto">Lo último</h2>
-        <p class="flex gap-5 text-tenue">
+        <p class="mt-3 mb-6 flex flex-wrap gap-x-5 gap-y-1 text-tenue">
           <a href="/writeups/" class="underline decoration-1 underline-offset-4 hover:text-texto">Todos los write-ups</a>
           <a href="/blog/" class="underline decoration-1 underline-offset-4 hover:text-texto">Todo el blog</a>
         </p>
-      </div>
-      <ListaPublicaciones publicaciones={ultimas} />
-    </section>
+        <ListaPublicaciones publicaciones={ultimas} />
+      </section>
 
-    <section id="certificaciones" aria-labelledby="titulo-certs">
-      <h2 id="titulo-certs" class="text-3xl font-bold tracking-tight text-texto">Certificaciones</h2>
-      <p class="mt-3 mb-6 max-w-2xl text-tenue">Las que tengo y las que preparo. Los apuntes de cada una están en el blog.</p>
-      <Certificaciones />
-    </section>
+      <section id="certificaciones" aria-labelledby="titulo-certs">
+        <h2 id="titulo-certs" class="text-3xl font-bold tracking-tight text-texto">Certificaciones</h2>
+        <p class="mt-3 mb-6 text-tenue">La que preparo, las que tengo y las siguientes.</p>
+        <Certificaciones />
+      </section>
+    </div>
 
     <section id="sobre-mi" aria-labelledby="titulo-sobre-mi" class="grid gap-12 lg:grid-cols-[1fr_1fr]">
       <div>

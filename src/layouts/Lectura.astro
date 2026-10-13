@@ -15,9 +15,10 @@ interface Props {
   etiquetas: string[];
   headings: MarkdownHeading[];
   borrador?: boolean;
+  imagen?: string;
 }
 
-const { titulo, tituloPagina, descripcion, miga, fecha, minutos, etiquetas, headings, borrador } = Astro.props;
+const { titulo, tituloPagina, descripcion, miga, fecha, minutos, etiquetas, headings, borrador, imagen } = Astro.props;
 // El índice coge el nivel de título más alto que use la nota y el siguiente
 const conTitulo = headings.filter((h) => h.depth >= 2);
 const nivelBase = conTitulo.length ? Math.min(...conTitulo.map((h) => h.depth)) : 2;
@@ -25,7 +26,7 @@ const indice = conTitulo.filter((h) => h.depth <= nivelBase + 1);
 const conIndice = indice.length >= 3;
 ---
 
-<Base titulo={tituloPagina} descripcion={descripcion} articulo={{ publicado: fecha, etiquetas }}>
+<Base titulo={tituloPagina} descripcion={descripcion} imagen={imagen} articulo={{ publicado: fecha, etiquetas }}>
   <article class="mx-auto max-w-6xl px-5 pt-10 sm:px-8 sm:pt-14">
     <a href={miga.href} class="inline-flex items-center gap-1 text-tenue hover:text-texto">
       <Icono nombre="flecha-izquierda" tam={16} />
@@ -53,6 +54,7 @@ const conIndice = indice.length >= 3;
           ))}
         </ul>
       )}
+      {Astro.slots.has('cabecera') && <div class="mt-7"><slot name="cabecera" /></div>}
     </header>
 
     {conIndice && (
