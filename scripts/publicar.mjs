@@ -332,7 +332,8 @@ function enlaceMarkdown(texto, url, nota, incrustar, original) {
       nota.avisos.push(`no encuentro «${archivo}» en la bóveda`);
       return incrustar ? '' : texto;
     }
-    return enlazarAdjunto(origen, nota, { incrustar, texto: texto || basename(archivo, ext) });
+    const limpio = texto.replace(/\|\d+(x\d+)?$/, ''); // ![captura|400](…): el 400 es un tamaño
+    return enlazarAdjunto(origen, nota, { incrustar, texto: limpio || basename(archivo, ext) });
   }
   return aNota(archivo, texto, nota, ancla);
 }
@@ -452,7 +453,8 @@ writeFileSync(
 );
 
 const nWriteups = publicadas.filter((n) => n.coleccion === 'writeups').length;
-info(`${publicadas.length} notas marcadas (${nWriteups} write-ups y ${publicadas.length - nWriteups} del blog).`);
+const nBlog = publicadas.length - nWriteups;
+info(`Notas marcadas: ${nWriteups} ${nWriteups === 1 ? 'write-up' : 'write-ups'} y ${nBlog} del blog.`);
 for (const n of publicadas) for (const a of n.avisos) aviso(`${n.rel}: ${a}`);
 if (NO_PUBLICADAS.size) {
   info('Enlazan a notas que no publicas; en la web esos enlaces quedan como texto normal:');
