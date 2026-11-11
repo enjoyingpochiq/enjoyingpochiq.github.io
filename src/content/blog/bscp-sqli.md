@@ -68,3 +68,49 @@ category = '' OR (1=1 AND realised = 1)
 Por tanto, no devolvería necesariamente todos los productos, sino solo aquellos que cumplieran *realised = 1*. Al comentar el **AND realised = 1**, eliminamos esa restricción.
 
 Por último, la sintaxis del comentario puede variar según el motor de base de datos. En **MySQL**, `-- -` funciona porque `--` requiere un espacio después, también puede usarse `#`. En otros motores suele bastar con `--` seguido de un espacio. Si el payload se envía por URL, además habría que codificar convenientemente espacios y comillas.
+
+Ponemos en práctica la teoría con el laboratorio:
+
+1. Vista inicial de la aplicación web, en este caso una tienda. Tenemos un buscador, y selector de filtros.
+
+![Vista inicial de la aplicación web](./images/SQLI2.png)
+
+Al seleccionar un filtro se realiza una petición GET y se pasa como parámetro *filter* y el valor de la categoría en la URL de la siguiente forma:
+
+```http
+GET /filter?category=Gifts HTTP/1.1
+```
+
+2. Capturamos la petición con el Repeater para ver la petición exacta
+
+![Petición capturada con BurpSuite](./images/SQLI3.png)
+
+La respuesta es el HTML generado en el servidor tras recorrer los productos que devolvió la base de datos. En el caso normal, ese conjunto viene filtrado por la consulta SQL.
+
+3. Probamos un canario para ver si existe una discrepancia entre una petición legítima y una petición maliciosa. En este caso el canario será ``'``.
+
+![Petición y respuesta al introducir un canario](./images/SQLI4.png)
+
+La respuesta del servidor es un **500 Internal Server Error**. Esto indica que se ha producido una excepción no controlada en el backend. Concretamente, el error proviene de la base de datos: al inyectar una comilla simple como canario, la consulta queda así:
+
+```sql
+SELECT * FROM product WHERE category = ''' AND realised = 1
+```
+
+Las tres comillas seguidas rompen la sintaxis: la primera abre el literal, la segunda lo cierra (cadena vacía) y la tercera abre un literal que nunca se cierra. El motor SQL no puede parsear la consulta, lanza un error y el backend, al no manejarlo, devuelve un 500.
+
+Este comportamiento es una señal muy útil para el atacante, porque confirma tres cosas:
+
+    1. **La entrada del usuario se concatena directamente en la consulta SQL (no hay consultas parametrizadas).**
+
+    2. **No existe un manejo de errores que oculte el fallo de la base de datos.**
+
+    3. **Tenemos control sobre la estructura de la query, no solo sobre el valor.**
+
+El siguiente paso es dejar de “romper” la consulta y construir un payload que cierre el literal correctamente e inyecte SQL válido, por ejemplo ' OR 1=1-- -.
+
+4. Inyectamos dicho **payload**, en este caso lo vamos a hacer directamente en la URL de la web, es importante URL-encodear el payload.
+
+![Explotación SQL injection simple](./images/SQLI5.png)
+
+Observamos que se logra resolver el laboratorio correctamente, pero lo que es más importante, se obtienen **TODOS** los productos de la base de datos, sin importar categoria o cualquier otro campo.
