@@ -70,6 +70,6 @@ export const certificaciones: Certificacion[] = [
     id: 'bscp',
     nombre: 'BSCP',
     emisor: 'PortSwigger',
-    estado: 'pendiente',
+    estado: 'en-curso',
   },
 ];
