@@ -2,7 +2,7 @@
 titulo: "BSCP - SQL Injection: Explicación y resolución de todos los laboratorios de BurpSuite"
 tipo: apuntes
 certificacion: BSCP
-fecha: 2026-03-24
+fecha: 2026-11-11
 tags: [Inyección, SQL Injection]
 ---
 
@@ -114,3 +114,60 @@ El siguiente paso es dejar de “romper” la consulta y construir un payload qu
 ![Explotación SQL injection simple](./images/SQLI5.png)
 
 Observamos que se logra resolver el laboratorio correctamente, pero lo que es más importante, se obtienen **TODOS** los productos de la base de datos, sin importar categoria o cualquier otro campo.
+
+### Bypass de inicio de sesión
+
+El ejemplo anterior, explica de forma detallada que es SQL injection, como explotarlo, y permite entender realmente lo que esta ocurriendo "por detrás" durante dicha explotación. En muchas ocasiones, el éxito de explotación de SQL injection esta correlacionado con entender cómo se construye la query, dónde se inserta el input y cómo podemos controlar la query para generar un impacto considerable.
+
+En el segundo laboratorio, vamos a lograr bypassear (omitir) el login, es decir, vamos a iniciar sesión como un usuario **administrador** sin otorgar las credenciales ni validarlas. Esto se debe a que existe una inyección SQL en el campo de usuario, porque el valor de username se concatena directamente en la consulta SQL en lugar de usar consultas parametrizadas.
+
+Me gustaría mencionar que en un pentesting, en este caso web, la dificultad radica principalmente en identificar las posibles vulnerabilidades, ya que en este caso **sabemos** que el entorno es vulnerable, y estamos sesgados a un tipo de vulnerabilidad específico. Esto en la vida real **NO** es asi, y hablo desde la experiencia, que al principio da vértigo ya que vas un poco perdido. Pero la experiencia, y por ende la metodología que uno construye con dicha experiencia suele guiarte bastante. Dicho esto procedemos con la identificación del input vulnerable, para ello utilizamos un canario en el input de usuario en el endpoint ``/login``.
+
+![Petición con comilla simple en el parámetro usuario del cuerpo y respuesta Internal Server Error](./images/SQLI6.png)
+
+Tal y como se puede ver en la captura, la petición enviada es la siguiente
+
+```http
+POST /login HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+csrf=o7Qc6Nbo3RU3h8CP8XC9C5rFguXhjmBC&username=%27&password=test
+```
+
+Incluye el token anti-CSRF, el usuario (la comilla simple URL-encodeada como %27) y una contraseña de prueba. La respuesta del servidor es un 500 Internal Server Error.
+
+Al igual que en el laboratorio anterior, el error proviene de la base de datos: al inyectar la comilla, la consulta queda con tres comillas seguidas ('''), la última de las cuales abre un literal que nunca se cierra. El motor SQL no puede parsear la consulta y lanza una excepción que el backend no maneja, devolviendo un 500.
+
+Este resultado confirma dos cosas: el input del usuario llega directamente a la consulta SQL y tenemos control sobre su estructura. 
+
+¿Cómo funciona el login por dentro?
+
+Para entender el bypass conviene ver qué consulta se ejecuta cuando alguien intenta iniciar sesión. La consulta sería equivalente a:
+
+```sql
+SELECT * FROM users WHERE username = 'INPUT_USUARIO' AND password = 'INPUT_PASSWORD'
+```
+
+El backend toma el username y el password que llegan del formulario, los concatena en la query y la ejecuta. Después comprueba si la consulta ha devuelto **al menos una fila**, y si es así, considera las credenciales válidas e inicia sesión con el usuario de esa fila. No vuelve a validar la contraseña en código, ya que confía plenamente en el resultado de la consulta.
+
+En este laboratorio el objetivo es iniciar sesión como **administrator**, así que la query que nos interesa “forzar” es, en esencia:
+
+```sql
+SELECT * FROM users WHERE username = 'administrator' AND password = '...'
+```
+
+Si conseguimos que esa consulta devuelva la fila del administrador sin conocer su contraseña, el backend nos autenticará como él. Y ahí es donde entra la inyección: como el valor de username se concatena directamente en la query, podemos alterar su estructura para que la comprobación de password deje de importar.
+
+Un payload típico si sabemos el usuario para iniciar sesión es: ``administrator'-- -``, la cual produce la siguiente consulta:
+
+```sql
+SELECT * FROM USERS WHERE username = 'administrator'-- - AND password = 'test'
+``` 
+
+El `-- -` comenta el resto de la query, incluida la comprobación de contraseña. La consulta devuelve la fila del administrador y el backend nos autentica como él. Probamos, por lo tanto dicho payload:
+
+![Petición y respuesta de bypass exitoso con redirección](./images/SQLI7.png)
+
+Confirmamos la redirección y explotación de la vulnerabilidad:
+
+![Confirmación de explotación de SQL injection para bypass de usuario administrator](./images/SQLI8.png)
