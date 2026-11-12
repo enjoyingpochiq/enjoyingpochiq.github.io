@@ -171,3 +171,69 @@ El `-- -` comenta el resto de la query, incluida la comprobación de contraseña
 Confirmamos la redirección y explotación de la vulnerabilidad:
 
 ![Confirmación de explotación de SQL injection para bypass de usuario administrator](./images/SQLI8.png)
+
+### Exfiltración de base de datos mediante SQL Injection con UNION
+
+En escenarios anteriores hemos logrado mostrar información oculta y bypassear la autenticación de un portal web como administrator. Ambos se consideran un impacto considerable, sin embargo, si tenemos la capacidad de inyectar en la query, podemos escalar el impacto mediante la lectura directa de variables y tablas de la base de datos, cambiando además el alcance de una aplicación web a la base de datos.
+
+En este laboratorio vamos a realizar precisamente la lectura del tipo de base de datos y su versión a partir de la información que expone la propia base de datos.
+
+1. Comenzamos aplicando la metodología de ir probando todos los inputs controlables por el usuario, en este caso, al hacer clic sobre una categoría se realiza una petición GET con el valor de dicha categoría asociada al parámetro tal y como se puede ver en la petición.
+
+```http
+GET /filter?category=Pets HTTP/1.1
+```
+
+Por lo tanto, probamos un canario (en este caso una comilla simple) en el parámetro `category` y se obtiene la siguiente respuesta:
+
+![Petición con comilla simple URL-encodeada y respuesta con error interno del servidor](./images/SQLI9.png)
+
+Como ya hemos podido observar en casos anteriores, se obtiene un error interno del servidor debido al **error de sintaxis de SQL** y como el backend no maneja los errores, la excepción se propaga y el servidor devuelve un 500.
+
+Una vez identificado el input vulnerable y observada una respuesta anómala respecto al comportamiento esperado, consideramos el parámetro category candidato a SQL injection. Para confirmarlo, enviamos un payload inofensivo que no extraiga información sensible, sino que simplemente altere la lógica de la consulta. Para ello necesitamos entender cómo se ejecuta la query, dónde estamos inyectando y qué impacto queremos provocar. La consulta es algo parecido a:
+
+```sql
+SELECT * FROM object WHERE category = 'INPUT_CATEGORY'
+```
+
+Para confirmar el hallazgo podemos inyectar dos payloads: uno que haga que la condición sea siempre **TRUE** (devolviendo todos los objetos) y otro que la haga siempre **FALSE** (no devolviendo ninguno). Si las respuestas difieren, la inyección está confirmada.
+
+- *Payload* **TRUE**:
+
+```sql
+SELECT * FROM object WHERE category = '' OR 1=1-- -
+```
+
+Por lo tanto el **payload** es `'OR 1=1-- -`
+
+- *Payload* **FALSE**:
+
+```sql
+SELECT * FROM object WHERE category = '' OR 1=2-- -
+```
+
+Como alternativa más robusta, ' AND 1=2-- - garantiza que la condición sea falsa aunque existan filas con category = ''.
+
+Las respuestas obtenidas **CONFIRMAN** la vulnerabilidad:
+
+![Respuesta con objetos devueltos debido al payload TRUE](./images/SQLI10.png)
+
+![Respuesta sin objetos devueltos debido al payload FALSE](./images/SQLI11.png)
+
+Al obtener respuestas discrepantes entre el *payload* **TRUE** y el **FALSE**, confirmamos que existe la vulnerabilidad y pasamos a explotarla de forma sistemática. El primer paso es determinar cuántas columnas se seleccionan en la query. Esto puede hacerse de varias formas, una de ellas es utilizando la cláusula ORDER BY:
+
+```sql
+' ORDER BY 1-- -
+' ORDER BY 2-- -
+' ORDER BY 3-- -
+```
+
+Incrementamos el número hasta que la aplicación devuelva un error o cambie el comportamiento, lo que indica que hemos superado el número de columnas del SELECT. El último valor que funcione nos da el número de columnas. Con esa información, el siguiente paso es usar UNION SELECT con NULL en cada posición para identificar qué columnas aceptan texto y se reflejan en la respuesta, y a partir de ahí extraer la información que buscamos (tipo y versión de la base de datos).
+
+En este caso, probamos `' ORDER BY 1-- -` y `' ORDER BY 2-- -` y obtenemos una respuesta correcta. Sin embargo, al probar `' ORDER BY 3-- -` obtenemos un error interno del servidor, este comportamiento nos sugiere que existen dos campos en la query.
+
+![Verificación de número de columnas seleccionada en la query](./images/SQLI12.png)
+
+Con el payload `' ORDER BY 2-- -` no obtenemos error, por lo tanto podemos asegurar que mínimo hay dos columnas que se estan seleccionando en la query.
+
+![Error al tratar de ordenar por la tercera columna](./images/SQLI13.png)
