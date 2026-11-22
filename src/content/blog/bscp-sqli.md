@@ -690,3 +690,15 @@ SQLite **no tiene `information_schema`**. Toda la metadata (tablas, índices, vi
 ### Exfiltración de contenido de la base de datos (bases de datos, tablas, columnas, datos) de una base de datos no Oracle
 
 Para el siguiente laboratorio vamos a realizar una exfiltración de la base de datos para obtener información. El objetivo principal es obtener loguearse como el usuario **administrator**.
+
+![Posible SQL injection al introducir un canario y mostrar error interno del servidor](./images/SQLI22.png)
+
+![Payload siempre True devuelve objetos en la respuesta](./images/SQLI23.png)
+
+![Payload siempre False NO devuelve objetos en la respuesta](./images/SQLI24.png)
+
+![Payload para encontrar un campo donde se refleja la información](./images/SQLI25.png)
+
+![Payload para descubrir motor de base de datos y version](./images/SQLI26.png)
+
+![Payload para obtener las tablas de la base de datos](image.png)
