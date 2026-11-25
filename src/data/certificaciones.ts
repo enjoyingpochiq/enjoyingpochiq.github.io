@@ -33,7 +33,7 @@ export const certificaciones: Certificacion[] = [
       { nombre: 'Penetration Testing Process', hecho: true },
       { nombre: 'Getting Started', hecho: false },
       { nombre: 'Network Enumeration with Nmap', hecho: true },
-      { nombre: 'Footprinting', hecho: false },
+      { nombre: 'Footprinting', hecho: true },
       { nombre: 'Information Gathering - Web Edition', hecho: false },
       { nombre: 'Vulnerability Assessment', hecho: false },
       { nombre: 'File Transfers', hecho: false },
